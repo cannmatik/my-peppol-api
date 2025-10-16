@@ -16,7 +16,6 @@ import {
   AppBar,
   Toolbar,
   ThemeProvider,
-  createTheme,
   CssBaseline,
   InputAdornment,
   IconButton,
@@ -32,213 +31,8 @@ import InfoIcon from "@mui/icons-material/Info";
 import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-
-// DeepSeek tarzı modern açık tema
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#175cd3',
-      light: '#4e86f7',
-      dark: '#0e3a8a',
-      contrastText: '#ffffff',
-    },
-    secondary: {
-      main: '#667085',
-    },
-    background: {
-      default: '#f8fafc',
-      paper: '#ffffff',
-    },
-    text: {
-      primary: '#101828',
-      secondary: '#667085',
-    },
-    grey: {
-      50: '#f8fafc',
-      100: '#f1f5f9',
-      200: '#e2e8f0',
-      300: '#cbd5e1',
-      400: '#94a3b8',
-      500: '#64748b',
-      600: '#475569',
-      700: '#334155',
-      800: '#1e293b',
-      900: '#0f172a',
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h4: {
-      fontWeight: 700,
-      fontSize: '2.25rem',
-      lineHeight: 1.2,
-      letterSpacing: '-0.02em',
-    },
-    h5: {
-      fontWeight: 600,
-      fontSize: '1.5rem',
-      lineHeight: 1.3,
-    },
-    h6: {
-      fontWeight: 600,
-      fontSize: '1.125rem',
-      lineHeight: 1.4,
-    },
-    body1: {
-      fontSize: '0.875rem',
-      lineHeight: 1.5,
-    },
-    body2: {
-      fontSize: '0.75rem',
-      lineHeight: 1.5,
-    },
-    button: {
-      fontWeight: 600,
-      textTransform: 'none',
-      fontSize: '0.875rem',
-    },
-  },
-  shape: {
-    borderRadius: 12,
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        "input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active": {
-          WebkitBoxShadow: "0 0 0 1000px #ffffff inset",
-          boxShadow: "0 0 0 1000px #ffffff inset",
-          WebkitTextFillColor: "#101828 !important",
-        },
-        body: {
-          scrollBehavior: 'smooth',
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#ffffff',
-          color: '#101828',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-          borderBottom: '1px solid #e2e8f0',
-        },
-      },
-    },
-    MuiButton: {
-      defaultProps: {
-        disableElevation: true,
-      },
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          fontWeight: 600,
-          padding: '10px 20px',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': {
-            transform: 'translateY(-1px)',
-          },
-        },
-        contained: {
-          background: 'linear-gradient(135deg, #175cd3 0%, #4e86f7 100%)',
-          '&:hover': {
-            background: 'linear-gradient(135deg, #0e3a8a 0%, #175cd3 100%)',
-          },
-        },
-        outlined: {
-          borderColor: '#d0d5dd',
-          '&:hover': {
-            borderColor: '#175cd3',
-            backgroundColor: 'rgba(23, 92, 211, 0.04)',
-          },
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-          border: '1px solid #f1f5f9',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': {
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-          },
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          backgroundImage: 'none',
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
-            backgroundColor: '#ffffff',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              backgroundColor: '#f8fafc',
-            },
-            '&.Mui-focused': {
-              backgroundColor: '#ffffff',
-              boxShadow: '0 0 0 3px rgba(23, 92, 211, 0.1)',
-            },
-          },
-          '& .MuiInputLabel-root': {
-            fontSize: '0.875rem',
-            fontWeight: 500,
-          },
-        },
-      },
-    },
-    MuiAlert: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          alignItems: 'center',
-        },
-        standardSuccess: {
-          backgroundColor: '#f0f9ff',
-          color: '#0369a1',
-          border: '1px solid #bae6fd',
-        },
-        standardError: {
-          backgroundColor: '#fef2f2',
-          color: '#dc2626',
-          border: '1px solid #fecaca',
-        },
-        standardInfo: {
-          backgroundColor: '#f0f9ff',
-          color: '#0369a1',
-          border: '1px solid #bae6fd',
-        },
-        standardWarning: {
-          backgroundColor: '#fffbeb',
-          color: '#92400e',
-          border: '1px solid #fed7aa',
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          fontWeight: 500,
-          fontSize: '0.75rem',
-        },
-        outlined: {
-          borderColor: '#e2e8f0',
-          backgroundColor: '#f8fafc',
-        },
-      },
-    },
-  },
-});
+import { theme } from "./theme";
+import "./styles.css";
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -307,9 +101,19 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Result header'ını belirleme
+  // Result header'ını doğru şekilde belirleme - DÜZELTİLDİ
   const getResultHeader = () => {
     if (!result) return null;
+
+    // Participant bulunamadıysa
+    if (result.matchType === 'not_found') {
+      return {
+        title: 'Participant Not Found',
+        icon: <CancelIcon sx={{ fontSize: 24 }} />,
+        color: '#dc2626',
+        bgColor: '#fef2f2'
+      };
+    }
 
     // Document type belirtilmemişse
     if (!result.documentType) {
@@ -371,46 +175,33 @@ export default function Home() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="sticky" elevation={0}>
-        <Toolbar sx={{ minHeight: '64px !important', px: { xs: 2, sm: 3 } }}>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, fontSize: '1.25rem' }}>
+      <AppBar position="sticky" elevation={0} className="app-bar">
+        <Toolbar className="toolbar">
+          <Typography variant="h6" component="div" className="app-title">
             Peppol Participant Check
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Typography variant="body2" color="text.secondary" className="author-name">
             by Can Matik
           </Typography>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
-        {/* Header - Daha kompakt */}
-        <Box textAlign="center" mb={4}>
+      <Container maxWidth="lg" className="main-container">
+        {/* Header */}
+        <Box textAlign="center" className="header-box">
           <Fade in timeout={800}>
             <Box>
               <Typography 
                 variant="h4" 
                 component="h1" 
-                gutterBottom 
-                sx={{ 
-                  background: 'linear-gradient(135deg, #101828 0%, #475569 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  mb: 1,
-                  fontSize: { xs: '1.75rem', md: '2.25rem' }
-                }}
+                className="main-title"
               >
                 Peppol Participant Validation
               </Typography>
               <Typography 
                 variant="body1" 
                 color="text.secondary" 
-                sx={{ 
-                  maxWidth: 600, 
-                  mx: 'auto',
-                  fontSize: '1rem',
-                  fontWeight: 400
-                }}
+                className="subtitle"
               >
                 Validate participants and check document support
               </Typography>
@@ -418,15 +209,16 @@ export default function Home() {
           </Fade>
         </Box>
 
-        <Grid container spacing={3} direction={isMobile ? "column" : "row"}>
-          {/* Form Section - Daha kompakt */}
-          <Grid item xs={12} md={4} order={isMobile ? 1 : 1}>
-            <Zoom in timeout={600}>
-              <Paper elevation={0} sx={{ p: 3, border: '1px solid #e2e8f0', height: 'fit-content' }}>
-                <Box component="form" onSubmit={handleSubmit}>
-                  {/* Compact Form Grid */}
-                  <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} sm={4} md={12}>
+        {/* Main Content - Centered */}
+        <Box className="centered-content">
+          <Grid container spacing={4} justifyContent="center" className="main-grid-container">
+            {/* Form Section */}
+            <Grid item xs={12} md={5} lg={4}>
+              <Zoom in timeout={600}>
+                <Paper elevation={0} className="form-paper">
+                  <Box component="form" onSubmit={handleSubmit} className="form-container">
+                    {/* Form Fields */}
+                    <Box className="form-fields">
                       <TextField
                         fullWidth
                         label="Scheme"
@@ -434,19 +226,18 @@ export default function Home() {
                         value={formData.schemeID}
                         onChange={handleChange}
                         placeholder="0208"
-                        size="small"
+                        size="medium"
                         required
+                        className="form-field"
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
-                              <SearchIcon color="primary" fontSize="small" />
+                              <SearchIcon color="primary" />
                             </InputAdornment>
                           ),
                         }}
                       />
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={5} md={12}>
+                      
                       <TextField
                         fullWidth
                         label="Participant ID"
@@ -454,374 +245,343 @@ export default function Home() {
                         value={formData.participantID}
                         onChange={handleChange}
                         placeholder="0418159080"
-                        size="small"
+                        size="medium"
                         required
+                        className="form-field"
                       />
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={3} md={12}>
+                      
                       <TextField
                         fullWidth
-                        label="Doc Type (Optional)"
+                        label="Document Type (Optional)"
                         name="documentType"
                         value={formData.documentType}
                         onChange={handleChange}
                         placeholder="Invoice"
-                        size="small"
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12}>
-                      <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
                         size="medium"
-                        disabled={loading}
-                        sx={{ 
-                          py: 1,
-                          fontSize: '0.875rem',
-                          mt: 1
-                        }}
-                        endIcon={!loading && <ArrowForwardIcon fontSize="small" />}
-                      >
-                        {loading ? (
-                          <>
-                            <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
-                            Checking...
-                          </>
-                        ) : (
-                          'Validate'
-                        )}
-                      </Button>
-                    </Grid>
-                  </Grid>
-                </Box>
+                        className="form-field"
+                      />
+                    </Box>
 
-                {/* Quick Suggestions - Daha kompakt */}
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.primary" gutterBottom sx={{ fontSize: '0.75rem' }}>
-                    <LightbulbIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
-                    Quick Fill
-                  </Typography>
-                  <Grid container spacing={1}>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom sx={{ fontSize: '0.7rem' }}>
-                        Scheme
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {suggestions.schemeID.slice(0, 2).map((item, index) => (
-                          <Chip
-                            key={index}
-                            label={item.label}
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleSuggestionClick('schemeID', item.value)}
-                            sx={{ 
-                              justifyContent: 'flex-start',
-                              fontSize: '0.7rem',
-                              height: '24px'
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom sx={{ fontSize: '0.7rem' }}>
-                        Participant
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {suggestions.participantID.slice(0, 2).map((item, index) => (
-                          <Chip
-                            key={index}
-                            label={item.label}
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleSuggestionClick('participantID', item.value)}
-                            sx={{ 
-                              justifyContent: 'flex-start',
-                              fontSize: '0.7rem',
-                              height: '24px'
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </Grid>
-                    <Grid item xs={4}>
-                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom sx={{ fontSize: '0.7rem' }}>
-                        Doc Type
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {suggestions.documentType.slice(0, 2).map((item, index) => (
-                          <Chip
-                            key={index}
-                            label={item.label}
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleSuggestionClick('documentType', item.value)}
-                            sx={{ 
-                              justifyContent: 'flex-start',
-                              fontSize: '0.7rem',
-                              height: '24px'
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </Box>
-              </Paper>
-            </Zoom>
-          </Grid>
-
-          {/* Results Section - Daha geniş */}
-          <Grid item xs={12} md={8} order={isMobile ? 2 : 2}>
-            <Box sx={{ height: '100%' }}>
-              {loading && (
-                <Fade in timeout={500}>
-                  <Paper elevation={0} sx={{ 
-                    p: 6, 
-                    textAlign: 'center', 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    border: '1px solid #e2e8f0'
-                  }}>
-                    <CircularProgress size={48} color="primary" />
-                    <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
-                      Checking participant...
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Searching in Peppol directory
-                    </Typography>
-                  </Paper>
-                </Fade>
-              )}
-
-              {error && (
-                <Fade in timeout={500}>
-                  <Alert 
-                    severity="error"
-                    sx={{ mb: 3 }}
-                    action={
-                      <IconButton
-                        size="small"
-                        onClick={() => setError(null)}
-                      >
-                        <CancelIcon fontSize="small" />
-                      </IconButton>
-                    }
-                  >
-                    <Typography variant="body1" fontWeight={600}>Error</Typography>
-                    <Typography variant="body2">{error}</Typography>
-                  </Alert>
-                </Fade>
-              )}
-
-              {result && (
-                <Zoom in timeout={500}>
-                  <Card elevation={0} sx={{ border: '1px solid #e2e8f0' }}>
-                    <CardContent sx={{ p: 4 }}>
-                      {/* Header */}
-                      {resultHeader && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                          <Box
-                            sx={{
-                              p: 1.5,
-                              borderRadius: 10,
-                              backgroundColor: resultHeader.bgColor,
-                              color: resultHeader.color,
-                              mr: 2,
-                            }}
-                          >
-                            {resultHeader.icon}
-                          </Box>
-                          <Box>
-                            <Typography variant="h5" component="h2" fontWeight={700}>
-                              {resultHeader.title}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {result.matchType}
-                            </Typography>
-                          </Box>
-                        </Box>
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      disabled={loading}
+                      className="submit-button"
+                      endIcon={!loading && <ArrowForwardIcon />}
+                    >
+                      {loading ? (
+                        <>
+                          <CircularProgress size={20} color="inherit" className="button-spinner" />
+                          Checking...
+                        </>
+                      ) : (
+                        'Validate Participant'
                       )}
+                    </Button>
+                  </Box>
 
-                      {/* Participant Details - Daha kompakt grid */}
-                      <Grid container spacing={3} sx={{ mb: 3 }}>
-                        <Grid item xs={12} sm={6} md={4}>
-                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
-                            COMPANY NAME
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <Typography variant="body1" fontWeight={600} color="primary.main" sx={{ fontSize: '0.875rem' }}>
-                              {result.companyName || 'Not available'}
-                            </Typography>
-                            {result.companyName && (
-                              <IconButton 
-                                size="small" 
-                                onClick={() => copyToClipboard(result.companyName)}
-                                sx={{ color: 'text.secondary' }}
-                              >
-                                <ContentCopyIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            )}
-                          </Box>
-                        </Grid>
-                        
-                        <Grid item xs={6} sm={3} md={2}>
-                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
-                            PARTICIPANT ID
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.75rem' }}>
-                              {result.participantID}
-                            </Typography>
-                            <IconButton 
-                              size="small" 
-                              onClick={() => copyToClipboard(result.participantID)}
-                              sx={{ color: 'text.secondary', p: 0.5 }}
-                            >
-                              <ContentCopyIcon sx={{ fontSize: 12 }} />
-                            </IconButton>
-                          </Box>
-                        </Grid>
-                        
-                        <Grid item xs={6} sm={3} md={2}>
-                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
-                            SCHEME ID
-                          </Typography>
-                          <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, fontSize: '0.75rem' }}>
-                            {result.schemeID}
-                          </Typography>
-                        </Grid>
-                        
-                        {result.documentType && (
-                          <Grid item xs={12} sm={6} md={4}>
-                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
-                              REQUESTED DOCUMENT TYPE
-                            </Typography>
-                            <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, fontSize: '0.75rem' }}>
-                              {result.documentType}
-                            </Typography>
-                          </Grid>
-                        )}
-                      </Grid>
-
-                      {/* Document Types */}
-                      {result.allDocumentTypes && result.allDocumentTypes.length > 0 && (
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" color="text.primary" display="block" gutterBottom fontWeight={600} sx={{ fontSize: '0.8rem' }}>
-                            SUPPORTED DOCUMENT TYPES
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                            {result.allDocumentTypes.map((docType, index) => (
-                              <Chip
-                                key={index}
-                                label={docType}
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                                sx={{ 
-                                  fontWeight: 500,
-                                  fontSize: '0.7rem',
-                                  height: '24px'
-                                }}
-                              />
-                            ))}
-                          </Box>
-                        </Box>
-                      )}
-
-                      {/* Message */}
-                      <Alert 
-                        severity={
-                          result.supportsDocumentType === true ? "success" :
-                          result.supportsDocumentType === false ? "error" :
-                          result.matchType === 'alternative_schemes' ? "warning" : "info"
-                        }
-                        icon={false}
-                        sx={{ 
-                          mt: 2,
-                          py: 1,
-                          backgroundColor: 
-                            result.supportsDocumentType === true ? '#f0fdf4' :
-                            result.supportsDocumentType === false ? '#fef2f2' :
-                            result.matchType === 'alternative_schemes' ? '#fffbeb' : '#f0f9ff',
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>
-                          {result.message}
+                  {/* Quick Suggestions */}
+                  <Box className="suggestions-box">
+                    <Typography variant="subtitle2" fontWeight={600} color="text.primary" className="suggestions-title">
+                      <LightbulbIcon className="suggestion-icon" />
+                      Quick Fill Examples
+                    </Typography>
+                    <Box className="suggestions-grid">
+                      <Box className="suggestion-category-box">
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" className="suggestion-category">
+                          Scheme
                         </Typography>
-                      </Alert>
-
-                      {/* Alternative Schemes */}
-                      {result.alternativeSchemes && result.alternativeSchemes.length > 0 && (
-                        <Box sx={{ mt: 3 }}>
-                          <Divider sx={{ my: 2 }} />
-                          <Typography variant="subtitle1" gutterBottom color="text.primary" fontWeight={600} sx={{ fontSize: '0.9rem' }}>
-                            ALTERNATIVE SCHEMES FOUND
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.8rem' }}>
-                            Participant found with different schemes:
-                          </Typography>
-                          <Grid container spacing={1}>
-                            {result.alternativeSchemes.map((scheme, index) => (
-                              <Grid item xs={12} sm={6} key={index}>
-                                <Card variant="outlined" sx={{ p: 1.5, backgroundColor: '#f8fafc', height: '100%' }}>
-                                  <Typography variant="body2" fontWeight={700} color="primary.main" sx={{ fontSize: '0.75rem' }}>
-                                    {scheme.scheme}:{scheme.participantId}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.7rem' }}>
-                                    {scheme.companyName}
-                                  </Typography>
-                                  {scheme.documentTypes && scheme.documentTypes.length > 0 && (
-                                    <Box sx={{ mt: 1 }}>
-                                      <Typography variant="caption" fontWeight={600} display="block" sx={{ fontSize: '0.65rem' }}>
-                                        Supports:
-                                      </Typography>
-                                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                        {scheme.documentTypes.map((doc, idx) => (
-                                          <Chip
-                                            key={idx}
-                                            label={doc}
-                                            size="small"
-                                            variant="outlined"
-                                            sx={{ fontSize: '0.6rem', height: '20px' }}
-                                          />
-                                        ))}
-                                      </Box>
-                                    </Box>
-                                  )}
-                                </Card>
-                              </Grid>
-                            ))}
-                          </Grid>
+                        <Box className="suggestion-chips">
+                          {suggestions.schemeID.map((item, index) => (
+                            <Chip
+                              key={index}
+                              label={item.label}
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleSuggestionClick('schemeID', item.value)}
+                              className="suggestion-chip"
+                              title={item.description}
+                            />
+                          ))}
                         </Box>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Zoom>
-              )}
+                      </Box>
+                      <Box className="suggestion-category-box">
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" className="suggestion-category">
+                          Participant
+                        </Typography>
+                        <Box className="suggestion-chips">
+                          {suggestions.participantID.map((item, index) => (
+                            <Chip
+                              key={index}
+                              label={item.label}
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleSuggestionClick('participantID', item.value)}
+                              className="suggestion-chip"
+                              title={item.description}
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                      <Box className="suggestion-category-box">
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" className="suggestion-category">
+                          Document Type
+                        </Typography>
+                        <Box className="suggestion-chips">
+                          {suggestions.documentType.map((item, index) => (
+                            <Chip
+                              key={index}
+                              label={item.label}
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleSuggestionClick('documentType', item.value)}
+                              className="suggestion-chip"
+                              title={item.description}
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Paper>
+              </Zoom>
+            </Grid>
 
-              {/* Info Cards - Sadece boş durumda göster */}
-              {!loading && !result && !error && (
-                <Fade in timeout={800}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Card 
-                        sx={{ 
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease-in-out',
-                          border: '1px solid #e2e8f0',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                            borderColor: '#175cd3',
-                            boxShadow: '0 8px 25px rgba(23, 92, 211, 0.15)',
+            {/* Results Section */}
+            <Grid item xs={12} md={7} lg={8}>
+              <Box className="results-container">
+                {loading && (
+                  <Fade in timeout={500}>
+                    <Paper elevation={0} className="loading-paper">
+                      <CircularProgress size={60} color="primary" />
+                      <Typography variant="h5" className="loading-title">
+                        Checking participant...
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" className="loading-subtitle">
+                        Searching in Peppol directory
+                      </Typography>
+                    </Paper>
+                  </Fade>
+                )}
+
+                {error && (
+                  <Fade in timeout={500}>
+                    <Alert 
+                      severity="error"
+                      className="error-alert"
+                      action={
+                        <IconButton
+                          size="small"
+                          onClick={() => setError(null)}
+                        >
+                          <CancelIcon fontSize="small" />
+                        </IconButton>
+                      }
+                    >
+                      <Typography variant="body1" fontWeight={600}>Error</Typography>
+                      <Typography variant="body2">{error}</Typography>
+                    </Alert>
+                  </Fade>
+                )}
+
+                {result && (
+                  <Zoom in timeout={500}>
+                    <Card elevation={0} className="result-card">
+                      <CardContent className="result-content">
+                        {/* Header */}
+                        {resultHeader && (
+                          <Box className="result-header">
+                            <Box
+                              className="result-icon-container"
+                              sx={{
+                                backgroundColor: resultHeader.bgColor,
+                                color: resultHeader.color,
+                              }}
+                            >
+                              {resultHeader.icon}
+                            </Box>
+                            <Box className="result-header-text">
+                              <Typography variant="h4" component="h2" className="result-title">
+                                {resultHeader.title}
+                              </Typography>
+                              <Typography variant="body1" color="text.secondary" className="result-subtitle">
+                                {result.matchType}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+
+                        {/* Participant Details */}
+                        <Grid container spacing={4} className="details-grid">
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box className="detail-item">
+                              <Typography variant="caption" color="text.secondary" className="detail-label">
+                                COMPANY NAME
+                              </Typography>
+                              <Box className="detail-value-container">
+                                <Typography variant="h6" fontWeight={700} color="primary.main" className="detail-value">
+                                  {result.companyName || 'Not available'}
+                                </Typography>
+                                {result.companyName && (
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => copyToClipboard(result.companyName)}
+                                    className="copy-button"
+                                  >
+                                    <ContentCopyIcon className="copy-icon" />
+                                  </IconButton>
+                                )}
+                              </Box>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box className="detail-item">
+                              <Typography variant="caption" color="text.secondary" className="detail-label">
+                                PARTICIPANT ID
+                              </Typography>
+                              <Box className="detail-value-container">
+                                <Typography variant="body1" fontWeight={600} className="detail-value">
+                                  {result.participantID}
+                                </Typography>
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => copyToClipboard(result.participantID)}
+                                  className="copy-button"
+                                >
+                                  <ContentCopyIcon className="copy-icon" />
+                                </IconButton>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box className="detail-item">
+                              <Typography variant="caption" color="text.secondary" className="detail-label">
+                                SCHEME ID
+                              </Typography>
+                              <Typography variant="body1" fontWeight={600} className="detail-value">
+                                {result.schemeID}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          
+                          {result.documentType && (
+                            <Grid item xs={12}>
+                              <Box className="detail-item">
+                                <Typography variant="caption" color="text.secondary" className="detail-label">
+                                  REQUESTED DOCUMENT TYPE
+                                </Typography>
+                                <Typography variant="body1" fontWeight={600} className="detail-value">
+                                  {result.documentType}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          )}
+                        </Grid>
+
+                        {/* Document Types */}
+                        {result.allDocumentTypes && result.allDocumentTypes.length > 0 && (
+                          <Box className="document-types-box">
+                            <Typography variant="subtitle1" color="text.primary" className="document-types-title">
+                              SUPPORTED DOCUMENT TYPES
+                            </Typography>
+                            <Box className="document-chips">
+                              {result.allDocumentTypes.map((docType, index) => (
+                                <Chip
+                                  key={index}
+                                  label={docType}
+                                  size="medium"
+                                  color="primary"
+                                  variant="outlined"
+                                  className="document-chip"
+                                />
+                              ))}
+                            </Box>
+                          </Box>
+                        )}
+
+                        {/* Message */}
+                        <Alert 
+                          severity={
+                            result.supportsDocumentType === true ? "success" :
+                            result.supportsDocumentType === false ? "error" :
+                            result.matchType === 'alternative_schemes' ? "warning" : "info"
                           }
-                        }}
+                          icon={false}
+                          className="result-message-alert"
+                          sx={{ 
+                            backgroundColor: 
+                              result.supportsDocumentType === true ? '#f0fdf4' :
+                              result.supportsDocumentType === false ? '#fef2f2' :
+                              result.matchType === 'alternative_schemes' ? '#fffbeb' : '#f0f9ff',
+                          }}
+                        >
+                          <Typography variant="body1" fontWeight={500} className="result-message">
+                            {result.message}
+                          </Typography>
+                        </Alert>
+
+                        {/* Alternative Schemes */}
+                        {result.alternativeSchemes && result.alternativeSchemes.length > 0 && (
+                          <Box className="alternative-schemes-box">
+                            <Divider className="schemes-divider" />
+                            <Typography variant="h6" className="schemes-title">
+                              ALTERNATIVE SCHEMES FOUND
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" className="schemes-description">
+                              Participant found with different schemes:
+                            </Typography>
+                            <Grid container spacing={2} className="schemes-grid">
+                              {result.alternativeSchemes.map((scheme, index) => (
+                                <Grid item xs={12} md={6} key={index}>
+                                  <Card variant="outlined" className="scheme-card">
+                                    <CardContent className="scheme-card-content">
+                                      <Typography variant="body1" fontWeight={700} color="primary.main" className="scheme-id">
+                                        {scheme.scheme}:{scheme.participantId}
+                                      </Typography>
+                                      <Typography variant="body2" color="text.secondary" className="scheme-company">
+                                        {scheme.companyName}
+                                      </Typography>
+                                      {scheme.documentTypes && scheme.documentTypes.length > 0 && (
+                                        <Box className="scheme-documents">
+                                          <Typography variant="caption" fontWeight={600} className="scheme-docs-title">
+                                            Supports:
+                                          </Typography>
+                                          <Box className="scheme-doc-chips">
+                                            {scheme.documentTypes.map((doc, idx) => (
+                                              <Chip
+                                                key={idx}
+                                                label={doc}
+                                                size="small"
+                                                variant="outlined"
+                                                className="scheme-doc-chip"
+                                              />
+                                            ))}
+                                          </Box>
+                                        </Box>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Zoom>
+                )}
+
+                {/* Info Cards - Only when no result */}
+                {!loading && !result && !error && (
+                  <Fade in timeout={800}>
+                    <Box className="info-cards-container">
+                      <Card 
+                        className="info-card"
                         onClick={() => {
                           setFormData({
                             schemeID: "0208",
@@ -830,41 +590,22 @@ export default function Home() {
                           });
                         }}
                       >
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <Box
-                              sx={{
-                                p: 0.5,
-                                borderRadius: 6,
-                                backgroundColor: '#f0f9ff',
-                                color: '#175cd3',
-                                mr: 1.5,
-                              }}
-                            >
-                              <SearchIcon sx={{ fontSize: 16 }} />
+                        <CardContent className="info-card-content">
+                          <Box className="info-card-header">
+                            <Box className="info-card-icon info-card-icon-primary">
+                              <SearchIcon className="info-card-icon-svg" />
                             </Box>
-                            <Typography variant="h6" fontWeight={600} sx={{ fontSize: '0.9rem' }}>
+                            <Typography variant="h6" fontWeight={600} className="info-card-title">
                               Quick Lookup
                             </Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                          <Typography variant="body2" color="text.secondary" className="info-card-description">
                             Find participants by ID and scheme
                           </Typography>
                         </CardContent>
                       </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
                       <Card 
-                        sx={{ 
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease-in-out',
-                          border: '1px solid #e2e8f0',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                            borderColor: '#175cd3',
-                            boxShadow: '0 8px 25px rgba(23, 92, 211, 0.15)',
-                          }
-                        }}
+                        className="info-card"
                         onClick={() => {
                           setFormData({
                             schemeID: "0208",
@@ -873,49 +614,33 @@ export default function Home() {
                           });
                         }}
                       >
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <Box
-                              sx={{
-                                p: 0.5,
-                                borderRadius: 6,
-                                backgroundColor: '#f8fafc',
-                                color: '#667085',
-                                mr: 1.5,
-                              }}
-                            >
-                              <InfoIcon sx={{ fontSize: 16 }} />
+                        <CardContent className="info-card-content">
+                          <Box className="info-card-header">
+                            <Box className="info-card-icon info-card-icon-secondary">
+                              <InfoIcon className="info-card-icon-svg" />
                             </Box>
-                            <Typography variant="h6" fontWeight={600} sx={{ fontSize: '0.9rem' }}>
+                            <Typography variant="h6" fontWeight={600} className="info-card-title">
                               Check Support
                             </Typography>
                           </Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                          <Typography variant="body2" color="text.secondary" className="info-card-description">
                             Verify document type compatibility
                           </Typography>
                         </CardContent>
                       </Card>
-                    </Grid>
-                  </Grid>
-                </Fade>
-              )}
-            </Box>
+                    </Box>
+                  </Fade>
+                )}
+              </Box>
+            </Grid>
           </Grid>
-        </Grid>
+        </Box>
       </Container>
 
-      {/* Footer - Daha kompakt */}
-      <Box 
-        component="footer" 
-        sx={{ 
-          bgcolor: 'background.paper',
-          borderTop: '1px solid #e2e8f0',
-          py: 3,
-          mt: 6
-        }}
-      >
-        <Container maxWidth="xl">
-          <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: '0.75rem' }}>
+      {/* Footer */}
+      <Box component="footer" className="footer">
+        <Container maxWidth="lg">
+          <Typography variant="body2" color="text.secondary" align="center" className="footer-text">
             &copy; {new Date().getFullYear()} Peppol Participant Check • Built by Can Matik
           </Typography>
         </Container>
