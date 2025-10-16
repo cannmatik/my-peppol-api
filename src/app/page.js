@@ -22,7 +22,8 @@ import {
   IconButton,
   Fade,
   Zoom,
-  Divider
+  Divider,
+  useMediaQuery
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -37,21 +38,21 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#175cd3', // DeepSeek mavisi
+      main: '#175cd3',
       light: '#4e86f7',
       dark: '#0e3a8a',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#667085', // Gri ton
+      main: '#667085',
     },
     background: {
-      default: '#f8fafc', // Çok açık gri arka plan
+      default: '#f8fafc',
       paper: '#ffffff',
     },
     text: {
-      primary: '#101828', // Çok koyu gri
-      secondary: '#667085', // Orta gri
+      primary: '#101828',
+      secondary: '#667085',
     },
     grey: {
       50: '#f8fafc',
@@ -217,6 +218,11 @@ const theme = createTheme({
           color: '#0369a1',
           border: '1px solid #bae6fd',
         },
+        standardWarning: {
+          backgroundColor: '#fffbeb',
+          color: '#92400e',
+          border: '1px solid #fed7aa',
+        },
       },
     },
     MuiChip: {
@@ -244,6 +250,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -297,6 +305,46 @@ export default function Home() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Result header'ını belirleme
+  const getResultHeader = () => {
+    if (!result) return null;
+
+    // Document type belirtilmemişse
+    if (!result.documentType) {
+      if (result.matchType === 'alternative_schemes') {
+        return {
+          title: 'Participant Found with Alternative Schemes',
+          icon: <InfoIcon sx={{ fontSize: 24 }} />,
+          color: '#175cd3',
+          bgColor: '#f0f9ff'
+        };
+      }
+      return {
+        title: 'Participant Found',
+        icon: <CheckCircleIcon sx={{ fontSize: 24 }} />,
+        color: '#059669',
+        bgColor: '#f0fdf4'
+      };
+    }
+
+    // Document type belirtilmişse
+    if (result.supportsDocumentType) {
+      return {
+        title: 'Document Supported',
+        icon: <CheckCircleIcon sx={{ fontSize: 24 }} />,
+        color: '#059669',
+        bgColor: '#f0fdf4'
+      };
+    } else {
+      return {
+        title: 'Document Not Supported',
+        icon: <CancelIcon sx={{ fontSize: 24 }} />,
+        color: '#dc2626',
+        bgColor: '#fef2f2'
+      };
+    }
   };
 
   // Önerilen değerler
@@ -359,6 +407,8 @@ export default function Home() {
     </Card>
   );
 
+  const resultHeader = getResultHeader();
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -408,9 +458,9 @@ export default function Home() {
           </Fade>
         </Box>
 
-        <Grid container spacing={4}>
-          {/* Form Section */}
-          <Grid item xs={12} lg={6}>
+        <Grid container spacing={4} direction={isMobile ? "column" : "row"}>
+          {/* Form Section - Her zaman ilk sırada */}
+          <Grid item xs={12} md={6} order={isMobile ? 1 : 1}>
             <Zoom in timeout={600}>
               <Paper elevation={0} sx={{ p: 4, border: '1px solid #e2e8f0' }}>
                 <Typography variant="h5" gutterBottom fontWeight={600} mb={3}>
@@ -545,9 +595,9 @@ export default function Home() {
             </Zoom>
           </Grid>
 
-          {/* Results Section */}
-          <Grid item xs={12} lg={6}>
-            <Box sx={{ height: '100%', position: 'sticky', top: 24 }}>
+          {/* Results Section - Her zaman ikinci sırada */}
+          <Grid item xs={12} md={6} order={isMobile ? 2 : 2}>
+            <Box sx={{ height: '100%', position: isMobile ? 'static' : 'sticky', top: 24 }}>
               {loading && (
                 <Fade in timeout={500}>
                   <Paper elevation={0} sx={{ 
@@ -596,31 +646,29 @@ export default function Home() {
                   <Card elevation={0} sx={{ border: '1px solid #e2e8f0' }}>
                     <CardContent sx={{ p: 4 }}>
                       {/* Header */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 10,
-                            backgroundColor: result.supportsDocumentType ? '#f0f9ff' : '#fef2f2',
-                            color: result.supportsDocumentType ? '#175cd3' : '#dc2626',
-                            mr: 2,
-                          }}
-                        >
-                          {result.supportsDocumentType ? (
-                            <CheckCircleIcon sx={{ fontSize: 24 }} />
-                          ) : (
-                            <CancelIcon sx={{ fontSize: 24 }} />
-                          )}
+                      {resultHeader && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 10,
+                              backgroundColor: resultHeader.bgColor,
+                              color: resultHeader.color,
+                              mr: 2,
+                            }}
+                          >
+                            {resultHeader.icon}
+                          </Box>
+                          <Box>
+                            <Typography variant="h5" component="h2" fontWeight={700}>
+                              {resultHeader.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {result.matchType}
+                            </Typography>
+                          </Box>
                         </Box>
-                        <Box>
-                          <Typography variant="h5" component="h2" fontWeight={700}>
-                            {result.supportsDocumentType ? 'Validation Successful' : 'Validation Failed'}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {result.matchType}
-                          </Typography>
-                        </Box>
-                      </Box>
+                      )}
 
                       {/* Participant Details */}
                       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -674,7 +722,7 @@ export default function Home() {
                         {result.documentType && (
                           <Grid item xs={12}>
                             <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
-                              DOCUMENT TYPE
+                              REQUESTED DOCUMENT TYPE
                             </Typography>
                             <Typography variant="body2" fontWeight={600}>
                               {result.documentType}
@@ -706,11 +754,18 @@ export default function Home() {
 
                       {/* Message */}
                       <Alert 
-                        severity={result.supportsDocumentType ? "success" : "error"}
+                        severity={
+                          result.supportsDocumentType === true ? "success" :
+                          result.supportsDocumentType === false ? "error" :
+                          result.matchType === 'alternative_schemes' ? "warning" : "info"
+                        }
                         icon={false}
                         sx={{ 
                           mt: 2,
-                          backgroundColor: result.supportsDocumentType ? '#f0f9ff' : '#fef2f2',
+                          backgroundColor: 
+                            result.supportsDocumentType === true ? '#f0fdf4' :
+                            result.supportsDocumentType === false ? '#fef2f2' :
+                            result.matchType === 'alternative_schemes' ? '#fffbeb' : '#f0f9ff',
                         }}
                       >
                         <Typography variant="body2" fontWeight={500}>
