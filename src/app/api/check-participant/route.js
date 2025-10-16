@@ -133,32 +133,34 @@ function normalizeParticipantId(participantId) {
 function createNeonResponse(participant, schemeID, participantID, documentType, matchType) {
   const allDocumentTypes = parseDocumentTypes(participant);
   
-  // Supported types map oluştur
-  const supportedDocumentTypes = {};
-  allDocumentTypes.forEach(doc => {
-    supportedDocumentTypes[doc.toLowerCase()] = true;
-  });
-
-  const supportsDoc = documentType ? supportedDocumentTypes[documentType.toLowerCase()] : null;
+  // Document type kontrolü - SADECE documentType belirtilmişse kontrol et
+  let supportsDocumentType = null;
+  if (documentType && documentType.trim() !== '') {
+    const supportedDocumentTypes = {};
+    allDocumentTypes.forEach(doc => {
+      supportedDocumentTypes[doc.toLowerCase()] = true;
+    });
+    supportsDocumentType = supportedDocumentTypes[documentType.toLowerCase()];
+  }
   
-  const message = documentType 
-    ? (supportsDoc ? `✅ ${documentType} supported - ${participant.company_name}` 
-                   : `❌ ${documentType} not supported - ${participant.company_name}`)
-    : `⚠️ No document type specified - ${participant.company_name}`;
+  const message = documentType && documentType.trim() !== ''
+    ? (supportsDocumentType 
+        ? `✅ ${documentType} supported - ${participant.company_name}` 
+        : `❌ ${documentType} not supported - ${participant.company_name}`)
+    : `ℹ️ Participant found - ${participant.company_name}`;
 
   return {
     found: true,
     response: {
       participantID,
       schemeID,
-      documentType,
+      documentType: documentType || null,
       companyName: participant.company_name,
-      supportsDocumentType: supportsDoc,
+      supportsDocumentType: supportsDocumentType, // null, true, veya false
       matchType,
       foundIn: "neon_database",
       message,
       allDocumentTypes,
-      supportedDocumentTypes,
       actualFullPid: participant.full_pid
     }
   };
@@ -166,11 +168,11 @@ function createNeonResponse(participant, schemeID, participantID, documentType, 
 
 // Alternatif scheme'ler için response oluştur
 function createAlternativeSchemesResponse(participantID, schemeID, documentType, alternatives) {
-  // Document type support kontrolü
-  let supportsRequestedDoc = false;
-  let alternativeMessage = `❌ Participant not found with scheme ${schemeID}`;
+  // Document type support kontrolü - SADECE documentType belirtilmişse
+  let supportsRequestedDoc = null;
+  let alternativeMessage = `⚠️ Participant not found with scheme ${schemeID}, but found with alternative schemes`;
 
-  if (documentType) {
+  if (documentType && documentType.trim() !== '') {
     // İlk alternatifte document type support kontrol et
     const firstAlternative = alternatives[0];
     const firstAltDocTypes = firstAlternative.documentTypes || [];
@@ -178,7 +180,9 @@ function createAlternativeSchemesResponse(participantID, schemeID, documentType,
       doc.toLowerCase() === documentType.toLowerCase()
     );
     
-    alternativeMessage = `❌ ${documentType} not supported with scheme ${schemeID}`;
+    alternativeMessage = supportsRequestedDoc
+      ? `✅ ${documentType} supported with alternative schemes` 
+      : `❌ ${documentType} not supported with scheme ${schemeID}, but participant found with alternative schemes`;
   }
 
   return {
@@ -186,16 +190,43 @@ function createAlternativeSchemesResponse(participantID, schemeID, documentType,
     response: {
       participantID: participantID,
       schemeID: schemeID,
-      documentType: documentType,
+      documentType: documentType || null,
       companyName: alternatives[0]?.companyName || "Unknown",
       supportsDocumentType: false, // Ana scheme ile bulunamadığı için false
       matchType: "alternative_schemes",
       foundIn: "neon_database", 
       message: alternativeMessage,
       allDocumentTypes: [],
-      supportedDocumentTypes: {},
       alternativeSchemes: alternatives,
       note: "Participant found with alternative schemes. Try using one of the schemes below."
+    }
+  };
+}
+
+// Participant bulunamadığında alternatifleri göster
+function createNotFoundResponse(participantID, schemeID, documentType, alternativesFromCSV = []) {
+  let message = `❌ Participant not found with scheme ${schemeID}`;
+  
+  if (alternativesFromCSV.length > 0) {
+    message += ", but found potential matches in directory";
+  }
+
+  return {
+    found: false,
+    response: {
+      participantID,
+      schemeID,
+      documentType: documentType || null,
+      companyName: null,
+      supportsDocumentType: false,
+      matchType: "not_found",
+      foundIn: "none",
+      message,
+      allDocumentTypes: [],
+      alternativeSchemes: alternativesFromCSV,
+      note: alternativesFromCSV.length > 0 
+        ? "Participant not found with requested scheme, but potential matches found in directory."
+        : "Participant not found in Peppol directory."
     }
   };
 }
@@ -232,6 +263,22 @@ async function searchInNeon(schemeID, participantID, documentType) {
     if (result.rows.length > 0) {
       const participant = result.rows[0];
       console.log(`[FOUND] Endpoint match: ${participant.full_pid}`);
+      
+      // Eğer scheme ID eşleşmiyorsa, alternatif scheme olarak değerlendir
+      if (participant.scheme_id !== schemeID) {
+        const alternatives = result.rows.map(row => ({
+          scheme: row.scheme_id,
+          participantId: row.endpoint_id,
+          fullId: row.full_pid,
+          companyName: row.company_name,
+          documentTypes: parseDocumentTypes(row),
+          countryCode: row.country_code
+        }));
+        
+        console.log(`[FOUND] Scheme mismatch, returning as alternative`);
+        return createAlternativeSchemesResponse(participantID, schemeID, documentType, alternatives);
+      }
+      
       return createNeonResponse(participant, schemeID, participantID, documentType, "endpoint_match");
     }
     
@@ -247,6 +294,22 @@ async function searchInNeon(schemeID, participantID, documentType) {
       if (result.rows.length > 0) {
         const participant = result.rows[0];
         console.log(`[FOUND] Normalized match: ${participant.full_pid}`);
+        
+        // Eğer scheme ID eşleşmiyorsa, alternatif scheme olarak değerlendir
+        if (participant.scheme_id !== schemeID) {
+          const alternatives = result.rows.map(row => ({
+            scheme: row.scheme_id,
+            participantId: row.endpoint_id,
+            fullId: row.full_pid,
+            companyName: row.company_name,
+            documentTypes: parseDocumentTypes(row),
+            countryCode: row.country_code
+          }));
+          
+          console.log(`[FOUND] Scheme mismatch, returning as alternative`);
+          return createAlternativeSchemesResponse(participantID, schemeID, documentType, alternatives);
+        }
+        
         return createNeonResponse(participant, schemeID, participantID, documentType, "normalized_match");
       }
     }
@@ -268,8 +331,6 @@ async function searchInNeon(schemeID, participantID, documentType) {
         participantId: row.endpoint_id,
         fullId: row.full_pid,
         companyName: row.company_name,
-        supportsInvoice: row.supports_invoice,
-        supportsCreditNote: row.supports_creditnote,
         documentTypes: parseDocumentTypes(row),
         countryCode: row.country_code
       }));
@@ -320,9 +381,16 @@ export async function POST(request) {
 
     // 3. AŞAMA: Participants CSV'de alternatif scheme'leri ara
     console.log(`[API] Searching in CSV cache...`);
-    result = await searchAlternativeSchemes(participantID, documentType, participantListCache);
+    const csvResult = await searchAlternativeSchemes(participantID, documentType, participantListCache);
     
-    return NextResponse.json(result.response);
+    if (csvResult.found) {
+      return NextResponse.json(csvResult.response);
+    }
+
+    // 4. AŞAMA: Hiçbir şey bulunamadı
+    return NextResponse.json(
+      createNotFoundResponse(participantID, schemeID, documentType).response
+    );
 
   } catch (error) {
     console.error("[ERROR] API Route:", error);
