@@ -43,8 +43,8 @@ async function downloadCSV(url, filePath) {
   });
 }
 
-// Business Cards'tan company name ve document types'ı çıkar
-async function parseBusinessCardsData(csvPath) {  // ✅ async ekledim
+// Business Cards'tan company name ve document types'ı çıkar - DÜZELTTİM
+async function parseBusinessCardsData(csvPath) {
   const csvModule = await import('csv-parser');
   const csv = csvModule.default;
   
@@ -54,44 +54,71 @@ async function parseBusinessCardsData(csvPath) {  // ✅ async ekledim
     console.log("📊 Parsing business cards for enhanced data...");
     
     fs.createReadStream(csvPath)
-      .pipe(csv({ separator: ";", skipEmptyLines: true, quote: '"' }))
+      .pipe(csv({ 
+        separator: ";",
+        skipEmptyLines: true, 
+        quote: '"',
+        headers: [
+          'participant_id',
+          'names', 
+          'identifier_schemes',
+          'identifier_values',
+          'document_types',
+          'process_ids',
+          'transport_profiles',
+          'environment'
+        ]
+      }))
       .on('data', (data) => {
         try {
-          const scheme = data["Identifier schemes"];
-          const value = data["Identifier values"];
-          const docField = data["Document types"] || "";
-          const companyName = data["Names"] || "";
+          const participantId = data.participant_id;
+          const companyName = data.names || "";
+          const scheme = data.identifier_schemes;
+          const value = data.identifier_values;
+          const docField = data.document_types || "";
 
+          if (!participantId || !participantId.startsWith("iso6523-actorid-upis::")) return;
           if (!scheme || !value) return;
 
-          const [schemeId, endpointId] = value.split(":");
+          // Participant ID'den scheme ve endpoint'i çıkar
+          const parts = participantId.split("::");
+          if (parts.length !== 2) return;
+
+          const [schemeId, endpointId] = parts[1].split(":");
           if (!schemeId || !endpointId) return;
 
           const fullPid = `${schemeId}:${endpointId}`;
           
-          // Document types'ı parse et
+          console.log(`[DEBUG] Processing: ${fullPid} - ${companyName}`);
+          
+          // Document types'ı parse et - DÜZELTTİM
           const docTypes = docField.split('\n')
             .filter(line => line.trim().length > 0 && line.includes('busdox-docid-qns::'))
             .map(line => {
               const lineClean = line.trim().replace(/^"|"$/g, '');
               let shortName = '';
               
+              // Pattern 1: ...::DocumentType-2::DocumentType##...
               const pattern1 = /::([A-Za-z]+)-2::([A-Za-z]+)##/;
               const match1 = lineClean.match(pattern1);
               
               if (match1) {
-                shortName = match1[2];
+                shortName = match1[2]; // Invoice, CreditNote, etc.
               } else {
+                // Pattern 2: ...::DocumentType##...
                 const pattern2 = /::([A-Za-z]+)##/;
                 const match2 = lineClean.match(pattern2);
                 if (match2) {
                   shortName = match2[1];
                 } else {
+                  // Pattern 3: Son :: sonrasını al
                   const parts = lineClean.split('::');
                   if (parts.length > 1) {
                     const lastPart = parts[parts.length - 1];
                     shortName = lastPart.split('##')[0];
                     shortName = shortName.replace(/-2$/, '');
+                  } else {
+                    shortName = lineClean;
                   }
                 }
               }
@@ -99,6 +126,8 @@ async function parseBusinessCardsData(csvPath) {  // ✅ async ekledim
               return shortName.trim();
             })
             .filter(name => name && name.length > 0 && name !== '2.1');
+
+          console.log(`[DEBUG] ${fullPid} document types:`, docTypes);
 
           businessData.set(fullPid, {
             company_name: companyName,
@@ -109,7 +138,7 @@ async function parseBusinessCardsData(csvPath) {  // ✅ async ekledim
           });
 
         } catch (error) {
-          // skip
+          console.warn("⚠️ Parse error:", error.message);
         }
       })
       .on('end', () => {
@@ -189,17 +218,23 @@ async function enhancedBuild() {
       console.log(`✅ Processed ${Math.min(i + batchSize, entries.length)}/${entries.length} records...`);
     }
 
-    // Atomic swap
-    console.log("🔄 Performing atomic swap...");
-    await client.query('DROP TABLE IF EXISTS participants_old');
-    await client.query('ALTER TABLE IF EXISTS participants RENAME TO participants_old');
-    await client.query('ALTER TABLE participants2 RENAME TO participants');
+// Index'ler - DÜZELTTİM
+console.log("📈 Creating indexes...");
+await client.query('DROP INDEX IF EXISTS idx_participants_full_pid');
+await client.query('DROP INDEX IF EXISTS idx_participants_endpoint_id');
+await client.query('DROP INDEX IF EXISTS idx_participants_scheme_id');
 
-    // Index'ler
-    console.log("📈 Creating indexes...");
-    await client.query('CREATE INDEX idx_participants_full_pid ON participants(full_pid)');
-    await client.query('CREATE INDEX idx_participants_endpoint_id ON participants(endpoint_id)');
-    await client.query('CREATE INDEX idx_participants_scheme_id ON participants(scheme_id)');
+await client.query('CREATE INDEX idx_participants_full_pid ON participants(full_pid)');
+await client.query('CREATE INDEX idx_participants_endpoint_id ON participants(endpoint_id)');
+await client.query('CREATE INDEX idx_participants_scheme_id ON participants(scheme_id)');
+    // Test: Bir kaydı kontrol et
+    const testResult = await client.query(
+      "SELECT full_pid, company_name, document_types FROM participants WHERE endpoint_id = '0418159080' LIMIT 1"
+    );
+    
+    if (testResult.rows.length > 0) {
+      console.log("🧪 TEST RECORD:", testResult.rows[0]);
+    }
 
     console.log("🎉 ENHANCED BUILD COMPLETED!");
 
