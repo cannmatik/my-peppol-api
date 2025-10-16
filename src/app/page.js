@@ -315,7 +315,7 @@ export default function Home() {
     if (!result.documentType) {
       if (result.matchType === 'alternative_schemes') {
         return {
-          title: 'Participant Found with Alternative Schemes',
+          title: 'Found with Alternative Schemes',
           icon: <InfoIcon sx={{ fontSize: 24 }} />,
           color: '#175cd3',
           bgColor: '#f0f9ff'
@@ -350,62 +350,21 @@ export default function Home() {
   // Önerilen değerler
   const suggestions = {
     schemeID: [
-      { value: "0208", label: "0208 (VAT)", description: "European VAT identification number" },
-      { value: "0088", label: "0088 (GLN)", description: "Global Location Number" },
-      { value: "9925", label: "9925 (Test)", description: "Test scheme" },
-      { value: "9956", label: "9956 (OrgNr)", description: "Swedish organization number" }
+      { value: "0208", label: "0208", description: "VAT identification" },
+      { value: "0088", label: "0088", description: "GLN" },
+      { value: "9925", label: "9925", description: "Test" },
+      { value: "9956", label: "9956", description: "OrgNr" }
     ],
     participantID: [
-      { value: "0418159080", label: "0418159080", description: "Example VAT ID" },
-      { value: "008874732PR00000000", label: "008874732PR00000000", description: "Example GLN" },
-      { value: "9915:123456789", label: "9915:123456789", description: "Example with scheme" }
+      { value: "0418159080", label: "0418159080", description: "Example VAT" },
+      { value: "008874732PR00000000", label: "008874732PR...", description: "Example GLN" }
     ],
     documentType: [
       { value: "Invoice", label: "Invoice", description: "Commercial invoice" },
       { value: "CreditNote", label: "CreditNote", description: "Credit note" },
-      { value: "ApplicationResponse", label: "ApplicationResponse", description: "Application response" },
-      { value: "Order", label: "Order", description: "Purchase order" },
-      { value: "Catalogue", label: "Catalogue", description: "Product catalogue" }
+      { value: "Order", label: "Order", description: "Purchase order" }
     ]
   };
-
-  const QuickActionCard = ({ title, description, icon, onClick, color = "primary" }) => (
-    <Card 
-      sx={{ 
-        cursor: 'pointer',
-        transition: 'all 0.2s ease-in-out',
-        border: '1px solid #e2e8f0',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          borderColor: '#175cd3',
-          boxShadow: '0 8px 25px rgba(23, 92, 211, 0.15)',
-        }
-      }}
-      onClick={onClick}
-    >
-      <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box
-            sx={{
-              p: 1,
-              borderRadius: 8,
-              backgroundColor: color === 'primary' ? '#f0f9ff' : '#f8fafc',
-              color: color === 'primary' ? '#175cd3' : '#667085',
-              mr: 2,
-            }}
-          >
-            {icon}
-          </Box>
-          <Typography variant="h6" fontWeight={600}>
-            {title}
-          </Typography>
-        </Box>
-        <Typography variant="body2" color="text.secondary">
-          {description}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
 
   const resultHeader = getResultHeader();
 
@@ -413,7 +372,7 @@ export default function Home() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AppBar position="sticky" elevation={0}>
-        <Toolbar sx={{ minHeight: '64px !important' }}>
+        <Toolbar sx={{ minHeight: '64px !important', px: { xs: 2, sm: 3 } }}>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, fontSize: '1.25rem' }}>
             Peppol Participant Check
           </Typography>
@@ -423,9 +382,9 @@ export default function Home() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-        {/* Header */}
-        <Box textAlign="center" mb={6}>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+        {/* Header - Daha kompakt */}
+        <Box textAlign="center" mb={4}>
           <Fade in timeout={800}>
             <Box>
               <Typography 
@@ -437,112 +396,120 @@ export default function Home() {
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  mb: 2
+                  mb: 1,
+                  fontSize: { xs: '1.75rem', md: '2.25rem' }
                 }}
               >
                 Peppol Participant Validation
               </Typography>
               <Typography 
-                variant="h6" 
+                variant="body1" 
                 color="text.secondary" 
                 sx={{ 
                   maxWidth: 600, 
                   mx: 'auto',
-                  fontSize: '1.125rem',
+                  fontSize: '1rem',
                   fontWeight: 400
                 }}
               >
-                Validate Peppol participants and check document type support in real-time
+                Validate participants and check document support
               </Typography>
             </Box>
           </Fade>
         </Box>
 
-        <Grid container spacing={4} direction={isMobile ? "column" : "row"}>
-          {/* Form Section - Her zaman ilk sırada */}
-          <Grid item xs={12} md={6} order={isMobile ? 1 : 1}>
+        <Grid container spacing={3} direction={isMobile ? "column" : "row"}>
+          {/* Form Section - Daha kompakt */}
+          <Grid item xs={12} md={4} order={isMobile ? 1 : 1}>
             <Zoom in timeout={600}>
-              <Paper elevation={0} sx={{ p: 4, border: '1px solid #e2e8f0' }}>
-                <Typography variant="h5" gutterBottom fontWeight={600} mb={3}>
-                  Check Participant Details
-                </Typography>
-                
+              <Paper elevation={0} sx={{ p: 3, border: '1px solid #e2e8f0', height: 'fit-content' }}>
                 <Box component="form" onSubmit={handleSubmit}>
-                  <TextField
-                    fullWidth
-                    label="Scheme ID"
-                    name="schemeID"
-                    value={formData.schemeID}
-                    onChange={handleChange}
-                    placeholder="e.g., 0208"
-                    margin="normal"
-                    required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon color="primary" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
-                  <TextField
-                    fullWidth
-                    label="Participant ID"
-                    name="participantID"
-                    value={formData.participantID}
-                    onChange={handleChange}
-                    placeholder="e.g., 0418159080"
-                    margin="normal"
-                    required
-                  />
-
-                  <TextField
-                    fullWidth
-                    label="Document Type (Optional)"
-                    name="documentType"
-                    value={formData.documentType}
-                    onChange={handleChange}
-                    placeholder="e.g., Invoice"
-                    margin="normal"
-                  />
-
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    disabled={loading}
-                    sx={{ 
-                      mt: 4, 
-                      py: 1.5,
-                      fontSize: '1rem'
-                    }}
-                    endIcon={!loading && <ArrowForwardIcon />}
-                  >
-                    {loading ? (
-                      <>
-                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                        Validating...
-                      </>
-                    ) : (
-                      'Validate Participant'
-                    )}
-                  </Button>
+                  {/* Compact Form Grid */}
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={4} md={12}>
+                      <TextField
+                        fullWidth
+                        label="Scheme"
+                        name="schemeID"
+                        value={formData.schemeID}
+                        onChange={handleChange}
+                        placeholder="0208"
+                        size="small"
+                        required
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchIcon color="primary" fontSize="small" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={5} md={12}>
+                      <TextField
+                        fullWidth
+                        label="Participant ID"
+                        name="participantID"
+                        value={formData.participantID}
+                        onChange={handleChange}
+                        placeholder="0418159080"
+                        size="small"
+                        required
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={3} md={12}>
+                      <TextField
+                        fullWidth
+                        label="Doc Type (Optional)"
+                        name="documentType"
+                        value={formData.documentType}
+                        onChange={handleChange}
+                        placeholder="Invoice"
+                        size="small"
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        size="medium"
+                        disabled={loading}
+                        sx={{ 
+                          py: 1,
+                          fontSize: '0.875rem',
+                          mt: 1
+                        }}
+                        endIcon={!loading && <ArrowForwardIcon fontSize="small" />}
+                      >
+                        {loading ? (
+                          <>
+                            <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
+                            Checking...
+                          </>
+                        ) : (
+                          'Validate'
+                        )}
+                      </Button>
+                    </Grid>
+                  </Grid>
                 </Box>
 
-                {/* Quick Suggestions */}
-                <Box sx={{ mt: 4 }}>
-                  <Typography variant="subtitle2" fontWeight={600} color="text.primary" gutterBottom>
-                    <LightbulbIcon sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
-                    Quick Suggestions
+                {/* Quick Suggestions - Daha kompakt */}
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" fontWeight={600} color="text.primary" gutterBottom sx={{ fontSize: '0.75rem' }}>
+                    <LightbulbIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                    Quick Fill
                   </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom>
-                        Scheme ID
+                  <Grid container spacing={1}>
+                    <Grid item xs={4}>
+                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom sx={{ fontSize: '0.7rem' }}>
+                        Scheme
                       </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         {suggestions.schemeID.slice(0, 2).map((item, index) => (
                           <Chip
                             key={index}
@@ -550,16 +517,20 @@ export default function Home() {
                             size="small"
                             variant="outlined"
                             onClick={() => handleSuggestionClick('schemeID', item.value)}
-                            sx={{ justifyContent: 'flex-start' }}
+                            sx={{ 
+                              justifyContent: 'flex-start',
+                              fontSize: '0.7rem',
+                              height: '24px'
+                            }}
                           />
                         ))}
                       </Box>
                     </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom>
-                        Participant ID
+                    <Grid item xs={4}>
+                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom sx={{ fontSize: '0.7rem' }}>
+                        Participant
                       </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         {suggestions.participantID.slice(0, 2).map((item, index) => (
                           <Chip
                             key={index}
@@ -567,16 +538,20 @@ export default function Home() {
                             size="small"
                             variant="outlined"
                             onClick={() => handleSuggestionClick('participantID', item.value)}
-                            sx={{ justifyContent: 'flex-start' }}
+                            sx={{ 
+                              justifyContent: 'flex-start',
+                              fontSize: '0.7rem',
+                              height: '24px'
+                            }}
                           />
                         ))}
                       </Box>
                     </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom>
-                        Document Type
+                    <Grid item xs={4}>
+                      <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" gutterBottom sx={{ fontSize: '0.7rem' }}>
+                        Doc Type
                       </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         {suggestions.documentType.slice(0, 2).map((item, index) => (
                           <Chip
                             key={index}
@@ -584,7 +559,11 @@ export default function Home() {
                             size="small"
                             variant="outlined"
                             onClick={() => handleSuggestionClick('documentType', item.value)}
-                            sx={{ justifyContent: 'flex-start' }}
+                            sx={{ 
+                              justifyContent: 'flex-start',
+                              fontSize: '0.7rem',
+                              height: '24px'
+                            }}
                           />
                         ))}
                       </Box>
@@ -595,9 +574,9 @@ export default function Home() {
             </Zoom>
           </Grid>
 
-          {/* Results Section - Her zaman ikinci sırada */}
-          <Grid item xs={12} md={6} order={isMobile ? 2 : 2}>
-            <Box sx={{ height: '100%', position: isMobile ? 'static' : 'sticky', top: 24 }}>
+          {/* Results Section - Daha geniş */}
+          <Grid item xs={12} md={8} order={isMobile ? 2 : 2}>
+            <Box sx={{ height: '100%' }}>
               {loading && (
                 <Fade in timeout={500}>
                   <Paper elevation={0} sx={{ 
@@ -670,14 +649,14 @@ export default function Home() {
                         </Box>
                       )}
 
-                      {/* Participant Details */}
-                      <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={12}>
-                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                      {/* Participant Details - Daha kompakt grid */}
+                      <Grid container spacing={3} sx={{ mb: 3 }}>
+                        <Grid item xs={12} sm={6} md={4}>
+                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
                             COMPANY NAME
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body1" fontWeight={600} color="primary.main">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Typography variant="body1" fontWeight={600} color="primary.main" sx={{ fontSize: '0.875rem' }}>
                               {result.companyName || 'Not available'}
                             </Typography>
                             {result.companyName && (
@@ -686,45 +665,45 @@ export default function Home() {
                                 onClick={() => copyToClipboard(result.companyName)}
                                 sx={{ color: 'text.secondary' }}
                               >
-                                <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                <ContentCopyIcon sx={{ fontSize: 14 }} />
                               </IconButton>
                             )}
                           </Box>
                         </Grid>
                         
-                        <Grid item xs={6}>
-                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        <Grid item xs={6} sm={3} md={2}>
+                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
                             PARTICIPANT ID
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" fontWeight={600}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.75rem' }}>
                               {result.participantID}
                             </Typography>
                             <IconButton 
                               size="small" 
                               onClick={() => copyToClipboard(result.participantID)}
-                              sx={{ color: 'text.secondary' }}
+                              sx={{ color: 'text.secondary', p: 0.5 }}
                             >
-                              <ContentCopyIcon sx={{ fontSize: 14 }} />
+                              <ContentCopyIcon sx={{ fontSize: 12 }} />
                             </IconButton>
                           </Box>
                         </Grid>
                         
-                        <Grid item xs={6}>
-                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                        <Grid item xs={6} sm={3} md={2}>
+                          <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
                             SCHEME ID
                           </Typography>
-                          <Typography variant="body2" fontWeight={600}>
+                          <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, fontSize: '0.75rem' }}>
                             {result.schemeID}
                           </Typography>
                         </Grid>
                         
                         {result.documentType && (
-                          <Grid item xs={12}>
-                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={600}>
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
                               REQUESTED DOCUMENT TYPE
                             </Typography>
-                            <Typography variant="body2" fontWeight={600}>
+                            <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, fontSize: '0.75rem' }}>
                               {result.documentType}
                             </Typography>
                           </Grid>
@@ -734,8 +713,8 @@ export default function Home() {
                       {/* Document Types */}
                       {result.allDocumentTypes && result.allDocumentTypes.length > 0 && (
                         <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" color="text.primary" display="block" gutterBottom fontWeight={600}>
-                            Supported Document Types
+                          <Typography variant="subtitle2" color="text.primary" display="block" gutterBottom fontWeight={600} sx={{ fontSize: '0.8rem' }}>
+                            SUPPORTED DOCUMENT TYPES
                           </Typography>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                             {result.allDocumentTypes.map((docType, index) => (
@@ -745,7 +724,11 @@ export default function Home() {
                                 size="small"
                                 color="primary"
                                 variant="outlined"
-                                sx={{ fontWeight: 500 }}
+                                sx={{ 
+                                  fontWeight: 500,
+                                  fontSize: '0.7rem',
+                                  height: '24px'
+                                }}
                               />
                             ))}
                           </Box>
@@ -762,13 +745,14 @@ export default function Home() {
                         icon={false}
                         sx={{ 
                           mt: 2,
+                          py: 1,
                           backgroundColor: 
                             result.supportsDocumentType === true ? '#f0fdf4' :
                             result.supportsDocumentType === false ? '#fef2f2' :
                             result.matchType === 'alternative_schemes' ? '#fffbeb' : '#f0f9ff',
                         }}
                       >
-                        <Typography variant="body2" fontWeight={500}>
+                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>
                           {result.message}
                         </Typography>
                       </Alert>
@@ -777,40 +761,44 @@ export default function Home() {
                       {result.alternativeSchemes && result.alternativeSchemes.length > 0 && (
                         <Box sx={{ mt: 3 }}>
                           <Divider sx={{ my: 2 }} />
-                          <Typography variant="subtitle1" gutterBottom color="text.primary" fontWeight={600}>
-                            Alternative Schemes Found
+                          <Typography variant="subtitle1" gutterBottom color="text.primary" fontWeight={600} sx={{ fontSize: '0.9rem' }}>
+                            ALTERNATIVE SCHEMES FOUND
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.8rem' }}>
                             Participant found with different schemes:
                           </Typography>
-                          {result.alternativeSchemes.map((scheme, index) => (
-                            <Card key={index} variant="outlined" sx={{ mt: 1.5, p: 2, backgroundColor: '#f8fafc' }}>
-                              <Typography variant="body2" fontWeight={700} color="primary.main">
-                                {scheme.scheme}:{scheme.participantId}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                {scheme.companyName}
-                              </Typography>
-                              {scheme.documentTypes && scheme.documentTypes.length > 0 && (
-                                <Box sx={{ mt: 1 }}>
-                                  <Typography variant="caption" fontWeight={600} display="block">
-                                    Supports:
+                          <Grid container spacing={1}>
+                            {result.alternativeSchemes.map((scheme, index) => (
+                              <Grid item xs={12} sm={6} key={index}>
+                                <Card variant="outlined" sx={{ p: 1.5, backgroundColor: '#f8fafc', height: '100%' }}>
+                                  <Typography variant="body2" fontWeight={700} color="primary.main" sx={{ fontSize: '0.75rem' }}>
+                                    {scheme.scheme}:{scheme.participantId}
                                   </Typography>
-                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                    {scheme.documentTypes.map((doc, idx) => (
-                                      <Chip
-                                        key={idx}
-                                        label={doc}
-                                        size="small"
-                                        variant="outlined"
-                                        sx={{ fontSize: '0.7rem' }}
-                                      />
-                                    ))}
-                                  </Box>
-                                </Box>
-                              )}
-                            </Card>
-                          ))}
+                                  <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.7rem' }}>
+                                    {scheme.companyName}
+                                  </Typography>
+                                  {scheme.documentTypes && scheme.documentTypes.length > 0 && (
+                                    <Box sx={{ mt: 1 }}>
+                                      <Typography variant="caption" fontWeight={600} display="block" sx={{ fontSize: '0.65rem' }}>
+                                        Supports:
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                        {scheme.documentTypes.map((doc, idx) => (
+                                          <Chip
+                                            key={idx}
+                                            label={doc}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.6rem', height: '20px' }}
+                                          />
+                                        ))}
+                                      </Box>
+                                    </Box>
+                                  )}
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
                         </Box>
                       )}
                     </CardContent>
@@ -818,15 +806,22 @@ export default function Home() {
                 </Zoom>
               )}
 
-              {/* Info Cards */}
-              {!loading && !result && (
+              {/* Info Cards - Sadece boş durumda göster */}
+              {!loading && !result && !error && (
                 <Fade in timeout={800}>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12}>
-                      <QuickActionCard
-                        title="Participant Lookup"
-                        description="Find Peppol participants by scheme and ID with real-time validation from the Peppol directory."
-                        icon={<SearchIcon />}
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Card 
+                        sx={{ 
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out',
+                          border: '1px solid #e2e8f0',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            borderColor: '#175cd3',
+                            boxShadow: '0 8px 25px rgba(23, 92, 211, 0.15)',
+                          }
+                        }}
                         onClick={() => {
                           setFormData({
                             schemeID: "0208",
@@ -834,14 +829,42 @@ export default function Home() {
                             documentType: ""
                           });
                         }}
-                      />
+                      >
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Box
+                              sx={{
+                                p: 0.5,
+                                borderRadius: 6,
+                                backgroundColor: '#f0f9ff',
+                                color: '#175cd3',
+                                mr: 1.5,
+                              }}
+                            >
+                              <SearchIcon sx={{ fontSize: 16 }} />
+                            </Box>
+                            <Typography variant="h6" fontWeight={600} sx={{ fontSize: '0.9rem' }}>
+                              Quick Lookup
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                            Find participants by ID and scheme
+                          </Typography>
+                        </CardContent>
+                      </Card>
                     </Grid>
-                    <Grid item xs={12}>
-                      <QuickActionCard
-                        title="Document Support Check"
-                        description="Verify which document types (Invoice, CreditNote, Order, etc.) the participant can receive."
-                        icon={<InfoIcon />}
-                        color="secondary"
+                    <Grid item xs={12} sm={6}>
+                      <Card 
+                        sx={{ 
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out',
+                          border: '1px solid #e2e8f0',
+                          '&:hover': {
+                            transform: 'translateY(-2px)',
+                            borderColor: '#175cd3',
+                            boxShadow: '0 8px 25px rgba(23, 92, 211, 0.15)',
+                          }
+                        }}
                         onClick={() => {
                           setFormData({
                             schemeID: "0208",
@@ -849,7 +872,29 @@ export default function Home() {
                             documentType: "Invoice"
                           });
                         }}
-                      />
+                      >
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Box
+                              sx={{
+                                p: 0.5,
+                                borderRadius: 6,
+                                backgroundColor: '#f8fafc',
+                                color: '#667085',
+                                mr: 1.5,
+                              }}
+                            >
+                              <InfoIcon sx={{ fontSize: 16 }} />
+                            </Box>
+                            <Typography variant="h6" fontWeight={600} sx={{ fontSize: '0.9rem' }}>
+                              Check Support
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                            Verify document type compatibility
+                          </Typography>
+                        </CardContent>
+                      </Card>
                     </Grid>
                   </Grid>
                 </Fade>
@@ -859,18 +904,18 @@ export default function Home() {
         </Grid>
       </Container>
 
-      {/* Footer */}
+      {/* Footer - Daha kompakt */}
       <Box 
         component="footer" 
         sx={{ 
           bgcolor: 'background.paper',
           borderTop: '1px solid #e2e8f0',
-          py: 4,
-          mt: 8
+          py: 3,
+          mt: 6
         }}
       >
-        <Container maxWidth="lg">
-          <Typography variant="body2" color="text.secondary" align="center">
+        <Container maxWidth="xl">
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: '0.75rem' }}>
             &copy; {new Date().getFullYear()} Peppol Participant Check • Built by Can Matik
           </Typography>
         </Container>
