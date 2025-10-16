@@ -31,27 +31,34 @@ async function getNeonClient() {
 }
 
 // Neon'da ara
-// Neon'da participants_master'da ara
-async function searchInMaster(schemeID, participantID, documentType) {
+async function searchInNeon(schemeID, participantID, documentType) {
   let client;
   
   try {
     client = await getNeonClient();
     const fullPid = `${schemeID}:${participantID}`;
     
-    // Önce master'da ara
     const result = await client.query(
-      'SELECT * FROM participants_master WHERE endpoint_id = $1 OR full_pid = $2',
-      [participantID, fullPid]
+      'SELECT * FROM participants WHERE full_pid = $1',
+      [fullPid]
     );
     
     if (result.rows.length > 0) {
-      const alternatives = result.rows.map(row => ({
-        scheme: row.scheme_id,
-        participantId: row.endpoint_id,
-        fullId: row.full_pid,
-        countryCode: row.country_code
-      }));
+      const participant = result.rows[0];
+      let supportsDoc = false;
+      let message = "";
+
+      if (documentType) {
+        supportsDoc = documentType.toLowerCase() === "invoice" ? 
+          participant.supports_invoice : 
+          participant.supports_creditnote;
+
+        message = supportsDoc ? 
+          `✅ ${documentType} supported - ${participant.company_name}` : 
+          `❌ ${documentType} not supported - ${participant.company_name}`;
+      } else {
+        message = `⚠️ No document type specified - ${participant.company_name}`;
+      }
 
       return {
         found: true,
@@ -59,11 +66,13 @@ async function searchInMaster(schemeID, participantID, documentType) {
           participantID: participantID,
           schemeID: schemeID,
           documentType,
-          supportsDocumentType: false,
-          matchType: "alternative_schemes",
-          message: "❌ No participant exists with the given schema, but found with alternative schemes",
-          foundIn: "participants_master",
-          alternativeSchemes: alternatives
+          companyName: participant.company_name,
+          supportsDocumentType: documentType ? supportsDoc : null,
+          matchType: "direct",
+          foundIn: "neon_database",
+          message: message,
+          allDocumentTypes: participant.raw_document_types ? 
+            extractDocumentTypes(participant.raw_document_types) : []
         }
       };
     }
@@ -71,7 +80,7 @@ async function searchInMaster(schemeID, participantID, documentType) {
     return { found: false };
     
   } catch (error) {
-    console.error("[ERROR] Master search:", error);
+    console.error("[ERROR] Neon search:", error);
     return { found: false };
   } finally {
     if (client) {
