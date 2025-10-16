@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "npm run build-db && next build",
-    "build-db": "node src/scripts/atomic-build.js",
+    "build": "next build",
     "start": "next start",
+    "build-db": "node src/scripts/atomic-build.js",
     "lint": "next lint"
   },
   "dependencies": {
