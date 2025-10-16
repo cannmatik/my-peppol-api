@@ -21,7 +21,7 @@ function normalizeParticipantId(participantId) {
   return participantId;
 }
 
-// Sadece participant listesini oku (hızlı) - BU KALACAK
+// Sadece participant listesini oku (hızlı)
 export async function loadParticipantList() {
   return new Promise((resolve, reject) => {
     const participants = new Map();
@@ -76,14 +76,11 @@ export async function loadParticipantList() {
         console.log(`[INFO] Loaded ${participants.size} unique participant keys from directory`);
         resolve(participants);
       })
-      .on("error", (error) => {
-        console.error(`[ERROR] Failed to load participant list:`, error);
-        resolve(participants);
-      });
+      .on("error", reject);
   });
 }
 
-// Alternatif scheme'leri ara - BU KALACAK
+// Alternatif scheme'leri ara
 export async function searchAlternativeSchemes(participantID, documentType, participantList) {
   const searchKeys = [
     participantID.toLowerCase(),
@@ -106,9 +103,7 @@ export async function searchAlternativeSchemes(participantID, documentType, part
         participantID,
         documentType,
         supportsDocumentType: false,
-        matchType: "not_found",
-        allDocumentTypes: [],
-        supportedDocumentTypes: {}
+        matchType: "not_found"
       }
     };
   }
@@ -126,9 +121,6 @@ export async function searchAlternativeSchemes(participantID, documentType, part
       supportsDocumentType: false,
       matchType: "alternative_schemes",
       message: "❌ No participant exists with the given schema, but found with alternative schemes",
-      foundIn: "peppol_directory",
-      allDocumentTypes: [],
-      supportedDocumentTypes: {},
       alternativeSchemes: uniqueSchemes.map(s => ({
         scheme: s.scheme,
         participantId: s.participantId,
@@ -140,7 +132,7 @@ export async function searchAlternativeSchemes(participantID, documentType, part
   };
 }
 
-// Document types'ı parse et - BU KALACAK (route'da kullanılıyor)
+// Document types'ı parse et
 export function extractDocumentTypes(rawDocumentTypes) {
   if (!rawDocumentTypes) return [];
   
