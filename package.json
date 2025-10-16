@@ -11,6 +11,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.4",
+    "@mui/material": "^7.3.4",
     "csv-parse": "^6.1.0",
     "csv-parser": "^3.2.0",
     "fast-xml-parser": "^5.3.0",
