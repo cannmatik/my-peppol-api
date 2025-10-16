@@ -2,6 +2,8 @@ import fs from "fs";
 import https from "https";
 import path from "path";
 import { fileURLToPath } from "url";
+import pkg from 'pg';
+const { Client } = pkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,8 +17,6 @@ const CSV_PATHS = {
   businessCards: path.join(__dirname, "../src/app/data/directory-export-business-cards.csv"),
   participants: path.join(__dirname, "../src/app/data/directory-export-participants.csv")
 };
-
-const JSON_PATH = path.join(__dirname, "../src/app/data/participants.json");
 
 // data klasörünü oluştur
 function ensureDataDirectory() {
@@ -54,8 +54,56 @@ async function downloadCSV(url, filePath) {
   });
 }
 
-// CSV'yi JSON'a dönüştür
-async function processCSVToJSON() {
+// Neon database'e bağlan
+async function getNeonClient() {
+  const connectionString = process.env.NEON_DATABASE_URL;
+  
+  if (!connectionString) {
+    throw new Error('NEON_DATABASE_URL environment variable is required');
+  }
+
+  const client = new Client({
+    connectionString: connectionString,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+
+  await client.connect();
+  return client;
+}
+
+// Schema'yı oluştur
+async function createSchema(client) {
+  console.log("🗄️ Creating database schema...");
+  
+  const schemaSQL = `
+    CREATE TABLE IF NOT EXISTS participants (
+      id SERIAL PRIMARY KEY,
+      full_pid VARCHAR(255) UNIQUE NOT NULL,
+      scheme_id VARCHAR(50) NOT NULL,
+      endpoint_id VARCHAR(255) NOT NULL,
+      supports_invoice BOOLEAN DEFAULT FALSE,
+      supports_creditnote BOOLEAN DEFAULT FALSE,
+      company_name TEXT,
+      raw_document_types TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_participants_full_pid ON participants(full_pid);
+    CREATE INDEX IF NOT EXISTS idx_participants_endpoint_id ON participants(endpoint_id);
+    CREATE INDEX IF NOT EXISTS idx_participants_scheme_id ON participants(scheme_id);
+    CREATE INDEX IF NOT EXISTS idx_participants_supports_invoice ON participants(supports_invoice);
+    CREATE INDEX IF NOT EXISTS idx_participants_supports_creditnote ON participants(supports_creditnote);
+  `;
+
+  await client.query(schemaSQL);
+  console.log("✅ Database schema created");
+}
+
+// CSV'yi process et ve Neon'a yükle
+async function processCSVToNeon(client) {
   const csvModule = await import('csv-parser');
   const csv = csvModule.default;
   
@@ -68,7 +116,8 @@ async function processCSVToJSON() {
       .pipe(csv({ 
         separator: ";",
         skipEmptyLines: true,
-        quote: '"'
+        quote: '"',
+        mapHeaders: ({ header }) => header.trim()
       }))
       .on('data', (data) => {
         try {
@@ -99,17 +148,60 @@ async function processCSVToJSON() {
           console.warn("⚠️ CSV parse warning:", err.message);
         }
       })
-      .on('end', () => {
-        console.log(`✅ Processed ${results.length} records from CSV`);
-        resolve(results);
+      .on('end', async () => {
+        try {
+          console.log(`📊 Processing ${results.length} records...`);
+          
+          // Batch insert
+          const BATCH_SIZE = 100;
+          for (let i = 0; i < results.length; i += BATCH_SIZE) {
+            const batch = results.slice(i, i + BATCH_SIZE);
+            
+            const placeholders = batch.map((_, index) => {
+              const offset = index * 6;
+              return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`;
+            }).join(",");
+            
+            const values = batch.flatMap(row => [
+              row.full_pid,
+              row.scheme_id,
+              row.endpoint_id,
+              row.supports_invoice,
+              row.supports_creditnote,
+              row.company_name
+            ]);
+            
+            const query = `
+              INSERT INTO participants 
+              (full_pid, scheme_id, endpoint_id, supports_invoice, supports_creditnote, company_name) 
+              VALUES ${placeholders}
+              ON CONFLICT (full_pid) 
+              DO UPDATE SET
+                supports_invoice = EXCLUDED.supports_invoice,
+                supports_creditnote = EXCLUDED.supports_creditnote,
+                company_name = EXCLUDED.company_name,
+                updated_at = CURRENT_TIMESTAMP
+            `;
+            
+            await client.query(query, values);
+            console.log(`✅ Processed ${Math.min(i + BATCH_SIZE, results.length)}/${results.length} records...`);
+          }
+          
+          console.log(`🎉 Inserted/updated ${results.length} records into Neon database`);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
       })
       .on('error', reject);
   });
 }
 
-// JSON database oluştur
-async function buildJSONDatabase() {
-  console.log("🚀 Starting JSON database build process...");
+// Neon database build
+async function buildNeonDatabase() {
+  console.log("🚀 Starting Neon database build process...");
+  
+  let client;
   
   try {
     // Data klasörünü oluştur
@@ -118,31 +210,41 @@ async function buildJSONDatabase() {
     // CSV dosyalarını indir
     console.log("📥 Downloading CSV files...");
     await downloadCSV(CSV_URLS.businessCards, CSV_PATHS.businessCards);
-    await downloadCSV(CSV_URLS.participants, CSV_PATHS.participants);
     
-    // CSV'yi JSON'a dönüştür
-    const jsonData = await processCSVToJSON();
+    // Neon'a bağlan
+    client = await getNeonClient();
+    console.log("✅ Connected to Neon database");
     
-    // JSON dosyasını oluştur
-    fs.writeFileSync(JSON_PATH, JSON.stringify(jsonData, null, 2));
+    // Schema oluştur
+    await createSchema(client);
     
-    console.log(`🎉 JSON database built with ${jsonData.length} records!`);
-    console.log(`📁 JSON file: ${JSON_PATH}`);
+    // Verileri yükle
+    await processCSVToNeon(client);
     
-    // Temizlik: CSV dosyalarını sil (opsiyonel)
-    fs.unlinkSync(CSV_PATHS.businessCards);
-    fs.unlinkSync(CSV_PATHS.participants);
-    console.log("🧹 Temporary CSV files cleaned up");
+    console.log("🎉 Neon database build completed successfully!");
     
   } catch (error) {
-    console.error("❌ JSON build failed:", error);
+    console.error("❌ Neon build failed:", error);
     throw error;
+  } finally {
+    if (client) {
+      await client.end();
+      console.log("🔌 Disconnected from Neon database");
+    }
+    
+    // Temizlik
+    try {
+      fs.unlinkSync(CSV_PATHS.businessCards);
+      console.log("🧹 Temporary CSV file cleaned up");
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
 // Build script'ini çalıştır
 if (import.meta.url === `file://${process.argv[1]}`) {
-  buildJSONDatabase().catch(console.error);
+  buildNeonDatabase().catch(console.error);
 }
 
-export { buildJSONDatabase };
+export { buildNeonDatabase };
