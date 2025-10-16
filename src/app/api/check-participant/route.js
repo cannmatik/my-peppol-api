@@ -66,24 +66,64 @@ function extractDocumentTypes(rawDocumentTypes) {
   return [...new Set(docTypes)];
 }
 
-// JSON document types'ı parse et
-function parseJSONDocumentTypes(jsonData) {
-  if (!jsonData) return [];
+// Basit ve güvenli document types parser
+function parseDocumentTypes(participant) {
+  const allDocumentTypes = [];
   
-  try {
-    const docTypes = JSON.parse(jsonData);
-    if (Array.isArray(docTypes)) {
-      return docTypes.map(shortName => ({
-        shortName: shortName,
-        longName: `busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:${shortName}-2::${shortName}##...`,
-        supported: true
-      }));
+  console.log(`[DEBUG] parseDocumentTypes - participant data:`, {
+    has_document_types: !!participant.document_types,
+    document_types_type: typeof participant.document_types,
+    document_types_value: participant.document_types,
+    has_raw_document_types: !!participant.raw_document_types,
+    supports_invoice: participant.supports_invoice,
+    supports_creditnote: participant.supports_creditnote
+  });
+  
+  // 1. Önce JSON document_types'dan dene
+  if (participant.document_types) {
+    try {
+      let parsedData;
+      
+      if (typeof participant.document_types === 'string') {
+        // String ise JSON parse et
+        parsedData = JSON.parse(participant.document_types);
+      } else {
+        // Zaten object/array ise direkt kullan
+        parsedData = participant.document_types;
+      }
+      
+      console.log(`[DEBUG] Parsed document_types:`, parsedData);
+      
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach(docType => {
+          if (typeof docType === 'string' && docType.trim()) {
+            allDocumentTypes.push(docType.trim());
+          }
+        });
+      }
+    } catch (e) {
+      console.log(`[DEBUG] JSON parse failed:`, e.message);
     }
-  } catch (e) {
-    console.log("❌ JSON parse error:", e);
   }
   
-  return [];
+  // 2. Eğer JSON boşsa, raw_document_types'dan parse et
+  if (allDocumentTypes.length === 0 && participant.raw_document_types) {
+    console.log(`[DEBUG] Using raw_document_types`);
+    const docTypeNames = extractDocumentTypes(participant.raw_document_types);
+    docTypeNames.forEach(name => allDocumentTypes.push(name));
+  }
+  
+  // 3. supports_invoice ve supports_creditnote'dan da ekle (fallback)
+  if (participant.supports_invoice && !allDocumentTypes.some(doc => doc.toLowerCase() === 'invoice')) {
+    allDocumentTypes.push('Invoice');
+  }
+  if (participant.supports_creditnote && !allDocumentTypes.some(doc => doc.toLowerCase() === 'creditnote')) {
+    allDocumentTypes.push('CreditNote');
+  }
+  
+  console.log(`[DEBUG] Final document types:`, allDocumentTypes);
+  
+  return [...new Set(allDocumentTypes)]; // Remove duplicates
 }
 
 // Participant ID'den ülke kodunu çıkarmak için yardımcı fonksiyon
@@ -105,6 +145,43 @@ function normalizeParticipantId(participantId) {
   return participantId;
 }
 
+// Yardımcı fonksiyon - Neon response oluştur
+function createNeonResponse(participant, schemeID, participantID, documentType, matchType) {
+  const allDocumentTypes = parseDocumentTypes(participant);
+  
+  // Supported types map oluştur
+  const supportedDocumentTypes = {};
+  allDocumentTypes.forEach(doc => {
+    supportedDocumentTypes[doc.toLowerCase()] = true;
+  });
+
+  console.log(`[DEBUG] Supported document types map:`, supportedDocumentTypes);
+
+  const supportsDoc = documentType ? supportedDocumentTypes[documentType.toLowerCase()] : null;
+  
+  const message = documentType 
+    ? (supportsDoc ? `✅ ${documentType} supported - ${participant.company_name}` 
+                   : `❌ ${documentType} not supported - ${participant.company_name}`)
+    : `⚠️ No document type specified - ${participant.company_name}`;
+
+  return {
+    found: true,
+    response: {
+      participantID,
+      schemeID,
+      documentType,
+      companyName: participant.company_name,
+      supportsDocumentType: supportsDoc,
+      matchType,
+      foundIn: "neon_database",
+      message,
+      allDocumentTypes,
+      supportedDocumentTypes,
+      actualFullPid: participant.full_pid
+    }
+  };
+}
+
 // Neon'da ara - GELİŞMİŞ VERSİYON (alternatif search ile)
 async function searchInNeon(schemeID, participantID, documentType) {
   let client;
@@ -122,8 +199,16 @@ async function searchInNeon(schemeID, participantID, documentType) {
     );
     
     if (result.rows.length > 0) {
-      console.log(`[DEBUG] Found exact match: ${result.rows[0].company_name}`);
-      return createNeonResponse(result.rows[0], schemeID, participantID, documentType, "direct");
+      const participant = result.rows[0];
+      console.log(`[DEBUG] Found exact match: ${participant.company_name}`);
+      console.log(`[DEBUG] Participant data:`, {
+        company_name: participant.company_name,
+        document_types: participant.document_types,
+        raw_document_types: participant.raw_document_types,
+        supports_invoice: participant.supports_invoice,
+        supports_creditnote: participant.supports_creditnote
+      });
+      return createNeonResponse(participant, schemeID, participantID, documentType, "direct");
     }
     
     // 2. ENDPOINT ID İLE ARA (case insensitive)
@@ -169,7 +254,8 @@ async function searchInNeon(schemeID, participantID, documentType) {
         fullId: row.full_pid,
         companyName: row.company_name,
         supportsInvoice: row.supports_invoice,
-        supportsCreditNote: row.supports_creditnote
+        supportsCreditNote: row.supports_creditnote,
+        documentTypes: parseDocumentTypes(row)
       }));
 
       return {
@@ -200,64 +286,6 @@ async function searchInNeon(schemeID, participantID, documentType) {
   }
 }
 
-// Yardımcı fonksiyon - Neon response oluştur
-function createNeonResponse(participant, schemeID, participantID, documentType, matchType) {
-  // Document types'ı al (JSON veya raw)
-  let allDocumentTypes = [];
-  let supportedDocumentTypes = {};
-  
-  if (participant.document_types) {
-    // JSON formatında document_types varsa
-    allDocumentTypes = parseJSONDocumentTypes(participant.document_types);
-  } else if (participant.raw_document_types) {
-    // Raw document_types varsa parse et
-    const docTypeNames = extractDocumentTypes(participant.raw_document_types);
-    allDocumentTypes = docTypeNames.map(shortName => ({
-      shortName: shortName,
-      longName: `busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:${shortName}-2::${shortName}##...`,
-      supported: true
-    }));
-  }
-  
-  // Supported document types map oluştur
-  allDocumentTypes.forEach(doc => {
-    supportedDocumentTypes[doc.shortName.toLowerCase()] = true;
-  });
-
-  let supportsDoc = false;
-  let message = "";
-
-  if (documentType) {
-    // Önce supportedDocumentTypes'tan kontrol et, yoksa fallback
-    supportsDoc = supportedDocumentTypes[documentType.toLowerCase()] || 
-                 (documentType.toLowerCase() === "invoice" ? participant.supports_invoice : 
-                  documentType.toLowerCase() === "creditnote" ? participant.supports_creditnote : false);
-
-    message = supportsDoc ? 
-      `✅ ${documentType} supported - ${participant.company_name}` : 
-      `❌ ${documentType} not supported - ${participant.company_name}`;
-  } else {
-    message = `⚠️ No document type specified - ${participant.company_name}`;
-  }
-
-  return {
-    found: true,
-    response: {
-      participantID: participantID,
-      schemeID: schemeID,
-      documentType,
-      companyName: participant.company_name,
-      supportsDocumentType: documentType ? supportsDoc : null,
-      matchType: matchType,
-      foundIn: "neon_database",
-      message: message,
-      allDocumentTypes: allDocumentTypes,
-      supportedDocumentTypes: supportedDocumentTypes,
-      actualFullPid: participant.full_pid
-    }
-  };
-}
-
 export async function POST(request) {
   try {
     const { documentType, schemeID, participantID } = await request.json();
@@ -269,7 +297,7 @@ export async function POST(request) {
     }
 
     const fullPid = `${schemeID}:${participantID}`;
-    console.log(`[SEARCH] Looking for: ${fullPid}`);
+    console.log(`[SEARCH] Looking for: ${fullPid}, DocumentType: ${documentType}`);
 
     // 1. AŞAMA: Önce Neon'da gelişmiş arama
     let result = await searchInNeon(schemeID, participantID, documentType);
