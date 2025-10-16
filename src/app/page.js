@@ -13,8 +13,6 @@ import {
   Alert,
   CircularProgress,
   Grid,
-  AppBar,
-  Toolbar,
   ThemeProvider,
   CssBaseline,
   InputAdornment,
@@ -173,19 +171,7 @@ export default function Home() {
   const resultHeader = getResultHeader();
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AppBar position="sticky" elevation={0} className="app-bar">
-        <Toolbar className="toolbar">
-          <Typography variant="h6" component="div" className="app-title">
-            Peppol Participant Check
-          </Typography>
-          <Typography variant="body2" color="text.secondary" className="author-name">
-            by Can Matik
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
+    <>
       <Container maxWidth="lg" className="main-container">
         {/* Header */}
         <Box textAlign="center" className="header-box">
@@ -645,6 +631,6 @@ export default function Home() {
           </Typography>
         </Container>
       </Box>
-    </ThemeProvider>
+    </>
   );
 }
