@@ -3,8 +3,7 @@ import pkg from 'pg';
 const { Client } = pkg;
 import { 
   searchAlternativeSchemes,
-  loadParticipantList,
-  extractDocumentTypes 
+  loadParticipantList
 } from "../../../lib/participant-utils";
 
 let participantListCache = null;
@@ -30,13 +29,72 @@ async function getNeonClient() {
   return client;
 }
 
-// Neon'da ara
+// Document types'ı parse et
+function extractDocumentTypes(rawDocumentTypes) {
+  if (!rawDocumentTypes) return [];
+  
+  const docTypes = rawDocumentTypes.split('\n')
+    .filter(line => line.trim().length > 0 && line.includes('busdox-docid-qns::'))
+    .map(line => {
+      const lineClean = line.trim().replace(/^"|"$/g, '');
+      
+      let shortName = '';
+      const pattern1 = /::([A-Za-z]+)-2::([A-Za-z]+)##/;
+      const match1 = lineClean.match(pattern1);
+      
+      if (match1) {
+        shortName = match1[2];
+      } else {
+        const pattern2 = /::([A-Za-z]+)##/;
+        const match2 = lineClean.match(pattern2);
+        if (match2) {
+          shortName = match2[1];
+        } else {
+          const parts = lineClean.split('::');
+          if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            shortName = lastPart.split('##')[0];
+            shortName = shortName.replace(/-2$/, '');
+          }
+        }
+      }
+      
+      return shortName.trim();
+    })
+    .filter(name => name && name.length > 0 && name !== '2.1');
+
+  return [...new Set(docTypes)];
+}
+
+// JSON document types'ı parse et
+function parseJSONDocumentTypes(jsonData) {
+  if (!jsonData) return [];
+  
+  try {
+    const docTypes = JSON.parse(jsonData);
+    if (Array.isArray(docTypes)) {
+      return docTypes.map(shortName => ({
+        shortName: shortName,
+        longName: `busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:${shortName}-2::${shortName}##...`,
+        supported: true
+      }));
+    }
+  } catch (e) {
+    console.log("❌ JSON parse error:", e);
+  }
+  
+  return [];
+}
+
+// Neon'da ara - GÜNCELLENMİŞ VERSİYON
 async function searchInNeon(schemeID, participantID, documentType) {
   let client;
   
   try {
     client = await getNeonClient();
     const fullPid = `${schemeID}:${participantID}`;
+    
+    console.log(`[DEBUG] Searching for full_pid: ${fullPid}`);
     
     const result = await client.query(
       'SELECT * FROM participants WHERE full_pid = $1',
@@ -45,13 +103,38 @@ async function searchInNeon(schemeID, participantID, documentType) {
     
     if (result.rows.length > 0) {
       const participant = result.rows[0];
+      console.log(`[DEBUG] Found participant: ${participant.company_name}`);
+      
+      // Document types'ı al (JSON veya raw)
+      let allDocumentTypes = [];
+      let supportedDocumentTypes = {};
+      
+      if (participant.document_types) {
+        // JSON formatında document_types varsa
+        allDocumentTypes = parseJSONDocumentTypes(participant.document_types);
+      } else if (participant.raw_document_types) {
+        // Raw document_types varsa parse et
+        const docTypeNames = extractDocumentTypes(participant.raw_document_types);
+        allDocumentTypes = docTypeNames.map(shortName => ({
+          shortName: shortName,
+          longName: `busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:${shortName}-2::${shortName}##...`,
+          supported: true
+        }));
+      }
+      
+      // Supported document types map oluştur
+      allDocumentTypes.forEach(doc => {
+        supportedDocumentTypes[doc.shortName.toLowerCase()] = true;
+      });
+
       let supportsDoc = false;
       let message = "";
 
       if (documentType) {
-        supportsDoc = documentType.toLowerCase() === "invoice" ? 
-          participant.supports_invoice : 
-          participant.supports_creditnote;
+        // Önce supportedDocumentTypes'tan kontrol et, yoksa fallback
+        supportsDoc = supportedDocumentTypes[documentType.toLowerCase()] || 
+                     (documentType.toLowerCase() === "invoice" ? participant.supports_invoice : 
+                      documentType.toLowerCase() === "creditnote" ? participant.supports_creditnote : false);
 
         message = supportsDoc ? 
           `✅ ${documentType} supported - ${participant.company_name}` : 
@@ -71,12 +154,13 @@ async function searchInNeon(schemeID, participantID, documentType) {
           matchType: "direct",
           foundIn: "neon_database",
           message: message,
-          allDocumentTypes: participant.raw_document_types ? 
-            extractDocumentTypes(participant.raw_document_types) : []
+          allDocumentTypes: allDocumentTypes,
+          supportedDocumentTypes: supportedDocumentTypes
         }
       };
     }
     
+    console.log(`[DEBUG] No direct match found for ${fullPid}`);
     return { found: false };
     
   } catch (error) {
@@ -130,5 +214,4 @@ export async function POST(request) {
       { status: 500 }
     );
   }
-  
 }
