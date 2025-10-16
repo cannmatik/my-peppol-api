@@ -2,21 +2,19 @@
   "name": "my-peppol-api",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "npm run build-db && next build",
     "start": "next start",
-    "lint": "eslint"
+    "build-db": "node scripts/build-database.js",
+    "lint": "next lint"
   },
   "dependencies": {
     "csv-parser": "^3.2.0",
-    "fast-xml-parser": "^5.3.0",
     "next": "15.5.5",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "xml2js": "^0.6.2"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -1,7 +1,5 @@
 import fs from "fs";
 import https from "https";
-import { open } from "sqlite";
-import sqlite3 from "sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -13,15 +11,14 @@ const CSV_URLS = {
   participants: "https://test-directory.peppol.eu/export/participants-csv"
 };
 
-// Dosya yolları - ana dizinden başlayarak
 const CSV_PATHS = {
   businessCards: path.join(__dirname, "../src/app/data/directory-export-business-cards.csv"),
   participants: path.join(__dirname, "../src/app/data/directory-export-participants.csv")
 };
 
-const DB_PATH = path.join(__dirname, "../src/app/data/participants.db");
+const JSON_PATH = path.join(__dirname, "../src/app/data/participants.json");
 
-// data klasörünü kontrol et ve oluştur
+// data klasörünü oluştur
 function ensureDataDirectory() {
   const dataDir = path.join(__dirname, "../src/app/data");
   if (!fs.existsSync(dataDir)) {
@@ -51,65 +48,14 @@ async function downloadCSV(url, filePath) {
       });
       
     }).on('error', (err) => {
-      fs.unlink(filePath, () => {}); // Delete the file on error
+      fs.unlink(filePath, () => {});
       reject(err);
     });
   });
 }
 
-// Veritabanını oluştur
-async function buildDatabase() {
-  console.log("🚀 Starting database build process...");
-  
-  try {
-    // Data klasörünü oluştur
-    ensureDataDirectory();
-    
-    // CSV dosyalarını indir
-    await downloadCSV(CSV_URLS.businessCards, CSV_PATHS.businessCards);
-    await downloadCSV(CSV_URLS.participants, CSV_PATHS.participants);
-    
-    // Veritabanını oluştur
-    const db = await open({
-      filename: DB_PATH,
-      driver: sqlite3.Database,
-    });
-    
-    // Tabloyu oluştur
-    await db.exec(`
-      DROP TABLE IF EXISTS participants;
-      
-      CREATE TABLE participants (
-        full_pid TEXT PRIMARY KEY,
-        scheme_id TEXT,
-        endpoint_id TEXT,
-        supports_invoice BOOLEAN,
-        supports_creditnote BOOLEAN,
-        company_name TEXT,
-        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-      
-      CREATE INDEX idx_endpoint_id ON participants(endpoint_id);
-      CREATE INDEX idx_scheme_id ON participants(scheme_id);
-    `);
-    
-    console.log("🗃️ Database table created");
-    
-    // Business cards CSV'sini işle
-    await processBusinessCardsCSV(db);
-    
-    await db.close();
-    console.log("🎉 Database build completed successfully!");
-    
-  } catch (error) {
-    console.error("❌ Database build failed:", error);
-    throw error;
-  }
-}
-
-// Business cards CSV'sini işle
-async function processBusinessCardsCSV(db) {
-  // Dynamic import for csv-parser
+// CSV'yi JSON'a dönüştür
+async function processCSVToJSON() {
   const csvModule = await import('csv-parser');
   const csv = csvModule.default;
   
@@ -122,24 +68,14 @@ async function processBusinessCardsCSV(db) {
       .pipe(csv({ 
         separator: ";",
         skipEmptyLines: true,
-        quote: '"',
-        headers: [
-          'participant_id',
-          'names',
-          'identifier_schemes',
-          'identifier_values',
-          'document_types',
-          'process_ids',
-          'transport_profiles',
-          'environment'
-        ]
+        quote: '"'
       }))
       .on('data', (data) => {
         try {
-          const scheme = data.identifier_schemes;
-          const value = data.identifier_values;
-          const docField = data.document_types || "";
-          const companyName = data.names || "Unknown";
+          const scheme = data["Identifier schemes"];
+          const value = data["Identifier values"];
+          const docField = data["Document types"] || "";
+          const companyName = data["Names"] || "Unknown";
 
           if (!scheme || !value || scheme.trim() === "" || value.trim() === "") return;
 
@@ -154,53 +90,59 @@ async function processBusinessCardsCSV(db) {
             full_pid: fullPid,
             scheme_id: schemeId,
             endpoint_id: endpointId,
-            supports_invoice: supportsInvoice ? 1 : 0,
-            supports_creditnote: supportsCredit ? 1 : 0,
-            company_name: companyName
+            supports_invoice: supportsInvoice,
+            supports_creditnote: supportsCredit,
+            company_name: companyName,
+            raw_document_types: docField
           });
         } catch (err) {
           console.warn("⚠️ CSV parse warning:", err.message);
         }
       })
-      .on('end', async () => {
-        try {
-          console.log(`📊 Processing ${results.length} records...`);
-          
-          // Batch insert
-          const BATCH_SIZE = 500;
-          for (let i = 0; i < results.length; i += BATCH_SIZE) {
-            const batch = results.slice(i, i + BATCH_SIZE);
-            const placeholders = batch.map(() => "(?, ?, ?, ?, ?, ?)").join(",");
-            const values = batch.flatMap(row => [
-              row.full_pid,
-              row.scheme_id,
-              row.endpoint_id,
-              row.supports_invoice,
-              row.supports_creditnote,
-              row.company_name
-            ]);
-            
-            await db.run(
-              `INSERT INTO participants VALUES ${placeholders}`,
-              values
-            );
-            
-            console.log(`✅ Processed ${Math.min(i + BATCH_SIZE, results.length)}/${results.length} records...`);
-          }
-          
-          console.log(`🗃️ Inserted ${results.length} records into database`);
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
+      .on('end', () => {
+        console.log(`✅ Processed ${results.length} records from CSV`);
+        resolve(results);
       })
       .on('error', reject);
   });
 }
 
-// Build script'ini çalıştır
-if (import.meta.url === `file://${process.argv[1]}`) {
-  buildDatabase().catch(console.error);
+// JSON database oluştur
+async function buildJSONDatabase() {
+  console.log("🚀 Starting JSON database build process...");
+  
+  try {
+    // Data klasörünü oluştur
+    ensureDataDirectory();
+    
+    // CSV dosyalarını indir
+    console.log("📥 Downloading CSV files...");
+    await downloadCSV(CSV_URLS.businessCards, CSV_PATHS.businessCards);
+    await downloadCSV(CSV_URLS.participants, CSV_PATHS.participants);
+    
+    // CSV'yi JSON'a dönüştür
+    const jsonData = await processCSVToJSON();
+    
+    // JSON dosyasını oluştur
+    fs.writeFileSync(JSON_PATH, JSON.stringify(jsonData, null, 2));
+    
+    console.log(`🎉 JSON database built with ${jsonData.length} records!`);
+    console.log(`📁 JSON file: ${JSON_PATH}`);
+    
+    // Temizlik: CSV dosyalarını sil (opsiyonel)
+    fs.unlinkSync(CSV_PATHS.businessCards);
+    fs.unlinkSync(CSV_PATHS.participants);
+    console.log("🧹 Temporary CSV files cleaned up");
+    
+  } catch (error) {
+    console.error("❌ JSON build failed:", error);
+    throw error;
+  }
 }
 
-export { buildDatabase };
+// Build script'ini çalıştır
+if (import.meta.url === `file://${process.argv[1]}`) {
+  buildJSONDatabase().catch(console.error);
+}
+
+export { buildJSONDatabase };
