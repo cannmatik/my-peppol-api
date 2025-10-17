@@ -35,9 +35,6 @@ export default function RootLayout({ children }) {
           <main className="max-w-5xl mx-auto px-6 py-10">
             {children}
           </main>
-          <footer className="text-center text-sm text-gray-500 mt-10 mb-4">
-            © {new Date().getFullYear()} Analyseasy · Built with Next.js
-          </footer>
         </MuiThemeProvider>
       </body>
     </html>
