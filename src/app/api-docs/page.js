@@ -65,7 +65,7 @@ export default function ApiDocs() {
       description: "Check if a participant exists",
       code: `{
   "schemeID": "0208",
-  "participantID": "0418159080"
+  "participantID": "1009049626"
 }`
     },
     withDocument: {
@@ -73,7 +73,7 @@ export default function ApiDocs() {
       description: "Check if participant supports a specific document type",
       code: `{
   "schemeID": "0208",
-  "participantID": "0418159080",
+  "participantID": "1009049626",
   "documentType": "Invoice"
 }`
     },
@@ -93,7 +93,7 @@ export default function ApiDocs() {
       title: "Participant Found",
       description: "Participant exists and supports the document type",
       code: `{
-  "participantID": "0418159080",
+  "participantID": "1009049626",
   "schemeID": "0208",
   "documentType": "Invoice",
   "companyName": "Example Company AS",
@@ -102,14 +102,14 @@ export default function ApiDocs() {
   "foundIn": "neon_database",
   "message": "✅ Invoice supported - Example Company AS",
   "allDocumentTypes": ["Invoice", "CreditNote", "Order"],
-  "actualFullPid": "0208:0418159080"
+  "actualFullPid": "0208:1009049626"
 }`
     },
     notFound: {
       title: "Participant Not Found",
       description: "Participant not found with requested scheme",
       code: `{
-  "participantID": "0418159080",
+  "participantID": "1009049626",
   "schemeID": "0088",
   "documentType": "Invoice",
   "companyName": null,
@@ -121,7 +121,7 @@ export default function ApiDocs() {
   "alternativeSchemes": [
     {
       "scheme": "0208",
-      "participantId": "0418159080",
+      "participantId": "1009049626",
       "companyName": "Example Company AS",
       "documentTypes": ["Invoice", "CreditNote"]
     }
@@ -133,7 +133,7 @@ export default function ApiDocs() {
       title: "Alternative Schemes Found",
       description: "Participant found with different schemes",
       code: `{
-  "participantID": "0418159080",
+  "participantID": "1009049626",
   "schemeID": "0088",
   "documentType": "Invoice",
   "companyName": "Example Company AS",
@@ -145,8 +145,8 @@ export default function ApiDocs() {
   "alternativeSchemes": [
     {
       "scheme": "0208",
-      "participantId": "0418159080",
-      "fullId": "0208:0418159080",
+      "participantId": "1009049626",
+      "fullId": "0208:1009049626",
       "companyName": "Example Company AS",
       "documentTypes": ["Invoice", "CreditNote", "Order"],
       "countryCode": "BE"
@@ -159,7 +159,7 @@ export default function ApiDocs() {
 
   // Common values
   const commonSchemes = [
-    { id: "0208", name: "VAT identification number", example: "0418159080" },
+    { id: "0208", name: "VAT identification number", example: "1009049626" },
     { id: "0088", name: "GLN (Global Location Number)", example: "008874732PR00000000" },
     { id: "9925", name: "Test participants", example: "9908:123456789" },
     { id: "9956", name: "Organization number", example: "123456789" },

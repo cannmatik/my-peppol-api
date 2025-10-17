@@ -158,7 +158,7 @@ export default function Home() {
       { value: "9956", label: "9956", description: "OrgNr" }
     ],
     participantID: [
-      { value: "0418159080", label: "0418159080", description: "Example VAT" },
+      { value: "1009049626", label: "1009049626", description: "Example VAT" },
       { value: "008874732PR00000000", label: "008874732PR...", description: "Example GLN" }
     ],
     documentType: [
@@ -230,7 +230,7 @@ export default function Home() {
                         name="participantID"
                         value={formData.participantID}
                         onChange={handleChange}
-                        placeholder="0418159080"
+                        placeholder="1009049626"
                         size="medium"
                         required
                         className="form-field"
@@ -571,7 +571,7 @@ export default function Home() {
                         onClick={() => {
                           setFormData({
                             schemeID: "0208",
-                            participantID: "0418159080",
+                            participantID: "1009049626",
                             documentType: ""
                           });
                         }}
@@ -595,7 +595,7 @@ export default function Home() {
                         onClick={() => {
                           setFormData({
                             schemeID: "0208",
-                            participantID: "0418159080",
+                            participantID: "1009049626",
                             documentType: "Invoice"
                           });
                         }}
