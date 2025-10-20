@@ -4,9 +4,10 @@ name: Peppol Directory Daily Update (Neon DB)
 
 # Betiğin ne zaman çalışacağını tanımlar
 on:
-  # Her gün Türkiye saatiyle yaklaşık 05:00'te (UTC 02:00) çalıştır
+  # 🚨 GÜNCELLENEN KISIM: Her 3 saatte bir (UTC saatlerine göre) çalıştır.
+  # Saatler (UTC): 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 0,3,6,9,12,15,18,21 * * *'
   # Manuel olarak çalıştırma butonu ekler
   workflow_dispatch:
 
@@ -32,8 +33,7 @@ jobs:
     - name: Run Business Cards Update Script
       # Betiğinizi çalıştırır ve NEON_DATABASE_URL secret'ını ortam değişkeni olarak ekler
       run: node src/scripts/BusinessCards.js 
-      # Örn: Eğer dosya kök dizinde ise: 'node BusinessCards.js'
-      # Örn: Eğer dosya 'src/' içinde ise: 'node src/BusinessCards.js'
+      # Dosya yolunu doğru olduğundan emin olun! (Örn: node BusinessCards.js veya node src/BusinessCards.js)
       env:
         NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
         # Betiğinizde tanımlı olan diğer .env değişkenleri varsa, onları da ekleyin.
