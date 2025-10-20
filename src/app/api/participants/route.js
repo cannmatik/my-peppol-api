@@ -462,7 +462,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("[ERROR] API Route:", error);
     return NextResponse.json(
-      { success: false, error: "Internal server error", details: error.message },
+      { success: false, error: "500 Internal server error", details: error.message },
       { status: 500 }
     );
   }
