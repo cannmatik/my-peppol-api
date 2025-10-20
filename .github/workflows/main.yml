@@ -4,10 +4,9 @@ name: Peppol Directory Daily Update (Neon DB)
 
 # Betiğin ne zaman çalışacağını tanımlar
 on:
-  # 🚨 GÜNCELLENEN KISIM: Her 3 saatte bir (UTC saatlerine göre) çalıştır.
-  # Saatler (UTC): 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00
   schedule:
-    - cron: '0 0,3,6,9,12,15,18,21 * * *'
+  # 6 Saatte bir çalıştırrrrrr beleşş
+   - cron: '0 0,6,12,18 * * *'   
   # Manuel olarak çalıştırma butonu ekler
   workflow_dispatch:
 
