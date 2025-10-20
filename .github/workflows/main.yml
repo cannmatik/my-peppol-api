@@ -1,0 +1,49 @@
+# .github/workflows/daily-update.yml
+
+name: Peppol Directory Daily Update (Neon DB)
+
+# Betiğin ne zaman çalışacağını tanımlar
+on:
+  # Her gün Türkiye saatiyle yaklaşık 05:00'te (UTC 02:00) çalıştır
+  schedule:
+    - cron: '0 2 * * *'
+  # Manuel olarak çalıştırma butonu ekler
+  workflow_dispatch:
+
+jobs:
+  run_business_card_update:
+    runs-on: ubuntu-latest
+    
+    # Adımların çalıştığı ortam
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # Kullandığınız Node.js versiyonunu buraya yazın
+
+    - name: Install dependencies
+      run: npm install 
+      # Betiğinizde 'pg' ve 'fast-xml-parser' kullandığınız için bu adım gerekli.
+      # Eğer package.json dosyanız bu seviyede değilse, 'cd app && npm install' gibi yolu ayarlayın.
+
+    - name: Run Business Cards Update Script
+      # Betiğinizi çalıştırır ve NEON_DATABASE_URL secret'ını ortam değişkeni olarak ekler
+      run: node src/scripts/BusinessCards.js 
+      # Örn: Eğer dosya kök dizinde ise: 'node BusinessCards.js'
+      # Örn: Eğer dosya 'src/' içinde ise: 'node src/BusinessCards.js'
+      env:
+        NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        # Betiğinizde tanımlı olan diğer .env değişkenleri varsa, onları da ekleyin.
+        
+    - name: Cleanup (Log)
+      # Başarılı olursa temizlik logunu gösterir
+      if: success()
+      run: echo "Update job completed successfully and table swapped."
+      
+    - name: Failure Notification (Log)
+      # Hata olursa logu gösterir
+      if: failure()
+      run: echo "Update job failed. Check logs for details."
