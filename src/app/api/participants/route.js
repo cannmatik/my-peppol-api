@@ -89,20 +89,88 @@ function parseDocumentTypes(participant) {
   return [...new Set(allDocumentTypes)];
 }
 
-// Tüm participants'ı sayfalama ile çekme
-async function getAllParticipants(page = 1, limit = 100) {
+// Filtreleme için WHERE koşulu oluşturma
+function buildWhereClause(filters) {
+  const conditions = [];
+  const values = [];
+  let paramCount = 0;
+
+  if (filters.countryCode) {
+    paramCount++;
+    conditions.push(`country_code = $${paramCount}`);
+    values.push(filters.countryCode.toUpperCase());
+  }
+
+  if (filters.schemeId) {
+    paramCount++;
+    conditions.push(`scheme_id = $${paramCount}`);
+    values.push(filters.schemeId);
+  }
+
+  if (filters.companyName) {
+    paramCount++;
+    conditions.push(`company_name ILIKE $${paramCount}`);
+    values.push(`%${filters.companyName}%`);
+  }
+
+  if (filters.supportsInvoice !== undefined) {
+    paramCount++;
+    conditions.push(`supports_invoice = $${paramCount}`);
+    values.push(filters.supportsInvoice);
+  }
+
+  if (filters.supportsCreditnote !== undefined) {
+    paramCount++;
+    conditions.push(`supports_creditnote = $${paramCount}`);
+    values.push(filters.supportsCreditnote);
+  }
+
+  if (filters.documentType) {
+    paramCount++;
+    conditions.push(`(
+      document_types::text ILIKE $${paramCount} OR 
+      raw_document_types ILIKE $${paramCount} OR
+      (document_types IS NOT NULL AND document_types::text ILIKE $${paramCount})
+    )`);
+    values.push(`%${filters.documentType}%`);
+  }
+
+  if (filters.startDate) {
+    paramCount++;
+    conditions.push(`registration_date >= $${paramCount}`);
+    values.push(filters.startDate);
+  }
+
+  if (filters.endDate) {
+    paramCount++;
+    conditions.push(`registration_date <= $${paramCount}`);
+    values.push(filters.endDate);
+  }
+
+  return {
+    whereClause: conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '',
+    values
+  };
+}
+
+// Tüm participants'ı filtrelerle çekme - DÜZELTİLDİ: parametre sırası doğru
+async function getParticipantsWithFilters(filters = {}, page = 1, limit = 100) {
   let client;
   try {
     client = await getNeonClient();
     
     const offset = (page - 1) * limit;
+    const { whereClause, values } = buildWhereClause(filters);
     
-    console.log(`[SEARCH] Fetching participants: page=${page}, limit=${limit}, offset=${offset}`);
+    console.log(`[SEARCH] Fetching participants with filters:`, filters, `page=${page}, limit=${limit}, offset=${offset}`);
     
-    const countResult = await client.query('SELECT COUNT(*) FROM participants');
+    // Count query
+    const countQuery = `SELECT COUNT(*) FROM participants ${whereClause}`;
+    const countResult = await client.query(countQuery, values);
     const totalCount = parseInt(countResult.rows[0].count);
     
-    const result = await client.query(`
+    // Data query
+    const dataQuery = `
       SELECT 
         id,
         full_pid,
@@ -117,11 +185,15 @@ async function getAllParticipants(page = 1, limit = 100) {
         document_types,
         created_at
       FROM participants
+      ${whereClause}
       ORDER BY company_name ASC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+    `;
     
-    console.log(`[FOUND] ${result.rows.length} participants retrieved for page ${page}`);
+    const queryValues = [...values, limit, offset];
+    const result = await client.query(dataQuery, queryValues);
+    
+    console.log(`[FOUND] ${result.rows.length} participants retrieved with filters for page ${page}`);
     
     const participants = result.rows.map(participant => ({
       id: participant.id,
@@ -143,11 +215,80 @@ async function getAllParticipants(page = 1, limit = 100) {
       totalCount,
       totalPages: Math.ceil(totalCount / limit),
       currentPage: page,
-      participants
+      participants,
+      filters
     };
   } catch (error) {
-    console.error("[ERROR] Neon fetch all participants:", error);
-    throw new Error("Failed to fetch participants");
+    console.error("[ERROR] Neon fetch participants with filters:", error);
+    throw new Error("Failed to fetch participants with filters");
+  } finally {
+    if (client) {
+      await client.end();
+    }
+  }
+}
+
+// Benzersiz ülke kodlarını getirme
+async function getUniqueCountries() {
+  let client;
+  try {
+    client = await getNeonClient();
+    
+    console.log('[SEARCH] Fetching unique countries');
+    
+    const result = await client.query(`
+      SELECT DISTINCT country_code 
+      FROM participants 
+      WHERE country_code IS NOT NULL AND country_code != ''
+      ORDER BY country_code ASC
+    `);
+    
+    const countries = result.rows.map(row => row.country_code);
+    
+    console.log(`[FOUND] ${countries.length} unique countries`);
+    
+    return {
+      success: true,
+      count: countries.length,
+      countries
+    };
+  } catch (error) {
+    console.error("[ERROR] Neon fetch unique countries:", error);
+    throw new Error("Failed to fetch unique countries");
+  } finally {
+    if (client) {
+      await client.end();
+    }
+  }
+}
+
+// Benzersiz şema ID'lerini getirme
+async function getUniqueSchemes() {
+  let client;
+  try {
+    client = await getNeonClient();
+    
+    console.log('[SEARCH] Fetching unique schemes');
+    
+    const result = await client.query(`
+      SELECT DISTINCT scheme_id 
+      FROM participants 
+      WHERE scheme_id IS NOT NULL AND scheme_id != ''
+      ORDER BY scheme_id ASC
+    `);
+    
+    const schemes = result.rows.map(row => row.scheme_id);
+    
+    console.log(`[FOUND] ${schemes.length} unique schemes`);
+    
+    return {
+      success: true,
+      count: schemes.length,
+      schemes
+    };
+  } catch (error) {
+    console.error("[ERROR] Neon fetch unique schemes:", error);
+    throw new Error("Failed to fetch unique schemes");
   } finally {
     if (client) {
       await client.end();
@@ -156,92 +297,29 @@ async function getAllParticipants(page = 1, limit = 100) {
 }
 
 // Toplam participant sayısını alma
-async function getParticipantCount() {
+async function getParticipantCount(filters = {}) {
   let client;
   try {
     client = await getNeonClient();
     
-    console.log('[SEARCH] Fetching participant count');
+    console.log('[SEARCH] Fetching participant count with filters:', filters);
     
-    const result = await client.query('SELECT COUNT(*) FROM participants');
+    const { whereClause, values } = buildWhereClause(filters);
+    const query = `SELECT COUNT(*) FROM participants ${whereClause}`;
+    
+    const result = await client.query(query, values);
     const totalCount = parseInt(result.rows[0].count);
     
     console.log(`[FOUND] Total participants: ${totalCount}`);
     
     return {
       success: true,
-      totalCount
+      totalCount,
+      filters
     };
   } catch (error) {
     console.error("[ERROR] Neon fetch participant count:", error);
     throw new Error("Failed to fetch participant count");
-  } finally {
-    if (client) {
-      await client.end();
-    }
-  }
-}
-
-// Ülke koduna göre participants'ı çekme
-async function getParticipantsByCountry(countryCode, page = 1, limit = 100) {
-  let client;
-  try {
-    client = await getNeonClient();
-    
-    const offset = (page - 1) * limit;
-    
-    console.log(`[SEARCH] Fetching participants for country: ${countryCode}, page=${page}, limit=${limit}, offset=${offset}`);
-    
-    const countResult = await client.query('SELECT COUNT(*) FROM participants WHERE country_code = $1', [countryCode]);
-    const totalCount = parseInt(countResult.rows[0].count);
-    
-    const result = await client.query(`
-      SELECT 
-        id,
-        full_pid,
-        scheme_id,
-        endpoint_id,
-        supports_invoice,
-        supports_creditnote,
-        company_name,
-        country_code,
-        registration_date,
-        raw_document_types,
-        document_types,
-        created_at
-      FROM participants
-      WHERE country_code = $1
-      ORDER BY company_name ASC
-      LIMIT $2 OFFSET $3
-    `, [countryCode, limit, offset]);
-    
-    console.log(`[FOUND] ${result.rows.length} participants retrieved for country ${countryCode}, page ${page}`);
-    
-    const participants = result.rows.map(participant => ({
-      id: participant.id,
-      full_pid: participant.full_pid,
-      scheme_id: participant.scheme_id,
-      endpoint_id: participant.endpoint_id,
-      supports_invoice: participant.supports_invoice,
-      supports_creditnote: participant.supports_creditnote,
-      company_name: participant.company_name,
-      country_code: participant.country_code,
-      registration_date: participant.registration_date,
-      document_types: parseDocumentTypes(participant),
-      created_at: participant.created_at
-    }));
-    
-    return {
-      success: true,
-      count: participants.length,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
-      participants
-    };
-  } catch (error) {
-    console.error("[ERROR] Neon fetch participants by country:", error);
-    throw new Error(`Failed to fetch participants for country ${countryCode}`);
   } finally {
     if (client) {
       await client.end();
@@ -260,30 +338,76 @@ export async function GET(request) {
     const page = parseInt(pageHeader || searchParams.get('page') || '1');
     const limit = parseInt(limitHeader || searchParams.get('limit') || '100');
     
-    if (page < 1 || limit < 1) {
+    // Limit için maksimum değer
+    const maxLimit = 1000;
+    const actualLimit = Math.min(limit, maxLimit);
+    
+    if (page < 1 || actualLimit < 1) {
       return NextResponse.json(
         { success: false, error: "Invalid page or limit parameters" },
         { status: 400 }
       );
     }
     
-    // 1. Toplam participant sayısı endpoint'i
-    if (pathname.endsWith('/count')) {
-      console.log('[API] GET request: Fetching participant count');
+    // Filtre parametrelerini topla
+    const filters = {
+      countryCode: searchParams.get('country') || searchParams.get('countryCode'),
+      schemeId: searchParams.get('scheme') || searchParams.get('schemeId'),
+      companyName: searchParams.get('company') || searchParams.get('companyName') || searchParams.get('search'),
+      documentType: searchParams.get('documentType') || searchParams.get('docType'),
+      supportsInvoice: searchParams.get('supportsInvoice') ? searchParams.get('supportsInvoice') === 'true' : undefined,
+      supportsCreditnote: searchParams.get('supportsCreditnote') ? searchParams.get('supportsCreditnote') === 'true' : undefined,
+      startDate: searchParams.get('startDate') || searchParams.get('fromDate'),
+      endDate: searchParams.get('endDate') || searchParams.get('toDate')
+    };
+    
+    // Boş string'leri undefined yap
+    Object.keys(filters).forEach(key => {
+      if (filters[key] === '') {
+        filters[key] = undefined;
+      }
+    });
+
+    // 1. Benzersiz ülkeler endpoint'i
+    if (pathname.endsWith('/countries')) {
+      console.log('[API] GET request: Fetching unique countries');
       
-      const result = await getParticipantCount();
+      const result = await getUniqueCountries();
       
-      const response = NextResponse.json({
+      return NextResponse.json({
         success: true,
-        totalCount: result.totalCount
+        count: result.count,
+        countries: result.countries
       });
+    }
+
+    // 2. Benzersiz şemalar endpoint'i
+    if (pathname.endsWith('/schemes')) {
+      console.log('[API] GET request: Fetching unique schemes');
       
-      // Header'a toplam sayfa sayısını ekle (count için anlamlı değil ama tutarlılık için 1)
-      response.headers.set('X-Total-Pages', '1');
-      return response;
+      const result = await getUniqueSchemes();
+      
+      return NextResponse.json({
+        success: true,
+        count: result.count,
+        schemes: result.schemes
+      });
     }
     
-    // 2. Ülke koduna göre participant'lar endpoint'i
+    // 3. Toplam participant sayısı endpoint'i (filtreli)
+    if (pathname.endsWith('/count')) {
+      console.log('[API] GET request: Fetching participant count with filters:', filters);
+      
+      const result = await getParticipantCount(filters);
+      
+      return NextResponse.json({
+        success: true,
+        totalCount: result.totalCount,
+        filters: result.filters
+      });
+    }
+    
+    // 4. Ülke koduna göre participant'lar endpoint'i (backward compatibility)
     if (pathname.includes('/by-country/')) {
       const countryCode = pathname.split('/by-country/')[1];
       if (!countryCode) {
@@ -293,9 +417,12 @@ export async function GET(request) {
         );
       }
       
-      console.log(`[API] GET request: Fetching participants for country=${countryCode}, page=${page}, limit=${limit}`);
+      filters.countryCode = countryCode;
       
-      const result = await getParticipantsByCountry(countryCode, page, limit);
+      console.log(`[API] GET request: Fetching participants for country=${countryCode}, page=${page}, limit=${actualLimit}`);
+      
+      // DÜZELTME: Parametre sırası doğru şekilde
+      const result = await getParticipantsWithFilters(filters, page, actualLimit);
       
       const response = NextResponse.json({
         success: true,
@@ -303,18 +430,20 @@ export async function GET(request) {
         totalCount: result.totalCount,
         totalPages: result.totalPages,
         currentPage: result.currentPage,
+        filters: result.filters,
         data: result.participants
       });
       
-      // Header'a toplam sayfa sayısını ekle
       response.headers.set('X-Total-Pages', result.totalPages.toString());
+      response.headers.set('X-Total-Count', result.totalCount.toString());
       return response;
     }
     
-    // 3. Tüm participant'lar endpoint'i (sayfalama ile)
-    console.log(`[API] GET request: Fetching all participants, page=${page}, limit=${limit}`);
+    // 5. Ana endpoint - tüm participant'lar (filtreli ve sayfalı)
+    console.log(`[API] GET request: Fetching participants with filters:`, filters, `page=${page}, limit=${actualLimit}`);
     
-    const result = await getAllParticipants(page, limit);
+    // DÜZELTME: Parametre sırası doğru şekilde
+    const result = await getParticipantsWithFilters(filters, page, actualLimit);
     
     const response = NextResponse.json({
       success: true,
@@ -322,11 +451,12 @@ export async function GET(request) {
       totalCount: result.totalCount,
       totalPages: result.totalPages,
       currentPage: result.currentPage,
+      filters: result.filters,
       data: result.participants
     });
     
-    // Header'a toplam sayfa sayısını ekle
     response.headers.set('X-Total-Pages', result.totalPages.toString());
+    response.headers.set('X-Total-Count', result.totalCount.toString());
     return response;
     
   } catch (error) {

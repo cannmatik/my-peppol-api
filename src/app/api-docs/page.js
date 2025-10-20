@@ -18,13 +18,21 @@ import {
   Alert,
   Tabs,
   Tab,
-  useMediaQuery
+  useMediaQuery,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import CodeIcon from "@mui/icons-material/Code";
 import ApiIcon from "@mui/icons-material/Api";
 import DescriptionIcon from "@mui/icons-material/Description";
+import GetAppIcon from "@mui/icons-material/GetApp";
+import SearchIcon from "@mui/icons-material/Search";
+import PublicIcon from "@mui/icons-material/Public";
+import SchemaIcon from "@mui/icons-material/Schema";
 import { theme } from "../theme";
 import "./api-docs.css";
 
@@ -58,101 +66,152 @@ export default function ApiDocs() {
     setTimeout(() => setCopiedCode(""), 2000);
   };
 
+  // API Endpoints
+  const apiEndpoints = [
+    {
+      method: "GET",
+      path: "/api/participants",
+      description: "Get all participants with pagination and filtering",
+      parameters: [
+        { name: "page", type: "number", optional: true, desc: "Page number (default: 1)" },
+        { name: "limit", type: "number", optional: true, desc: "Items per page (default: 100, max: 1000)" },
+        { name: "country", type: "string", optional: true, desc: "Filter by country code (e.g., BE, DE, FR)" },
+        { name: "scheme", type: "string", optional: true, desc: "Filter by scheme ID (e.g., 9925, 0208)" },
+        { name: "company", type: "string", optional: true, desc: "Search by company name" },
+        { name: "documentType", type: "string", optional: true, desc: "Filter by document type" },
+        { name: "supportsInvoice", type: "boolean", optional: true, desc: "Filter by invoice support" },
+        { name: "supportsCreditnote", type: "boolean", optional: true, desc: "Filter by credit note support" }
+      ]
+    },
+    {
+      method: "GET",
+      path: "/api/participants/count",
+      description: "Get total participant count with optional filters",
+      parameters: [
+        { name: "country", type: "string", optional: true, desc: "Filter by country code" },
+        { name: "scheme", type: "string", optional: true, desc: "Filter by scheme ID" },
+        { name: "company", type: "string", optional: true, desc: "Search by company name" }
+      ]
+    },
+    {
+      method: "GET",
+      path: "/api/participants/countries",
+      description: "Get list of unique country codes",
+      parameters: []
+    },
+    {
+      method: "GET",
+      path: "/api/participants/schemes",
+      description: "Get list of unique scheme IDs",
+      parameters: []
+    },
+    {
+      method: "GET", 
+      path: "/api/participants/by-country/{countryCode}",
+      description: "Get participants by specific country",
+      parameters: [
+        { name: "countryCode", type: "string", optional: false, desc: "Country code (e.g., BE, DE, FR)" },
+        { name: "page", type: "number", optional: true, desc: "Page number" },
+        { name: "limit", type: "number", optional: true, desc: "Items per page" }
+      ]
+    },
+    {
+      method: "POST",
+      path: "/api/check-participant",
+      description: "Validate participant and check document support",
+      parameters: [
+        { name: "schemeID", type: "string", optional: false, desc: "Participant scheme ID" },
+        { name: "participantID", type: "string", optional: false, desc: "Participant identifier" },
+        { name: "documentType", type: "string", optional: true, desc: "Document type to check" }
+      ]
+    }
+  ];
+
   // Request examples
   const requestExamples = {
-    basic: {
-      title: "Basic Validation",
-      description: "Check if a participant exists",
-      code: `{
-  "schemeID": "0208",
-  "participantID": "1009049626"
-}`
+    getAll: {
+      title: "Get All Participants",
+      description: "Retrieve participants with pagination",
+      code: `GET /api/participants?page=1&limit=50`
     },
-    withDocument: {
-      title: "Document Support Check",
-      description: "Check if participant supports a specific document type",
-      code: `{
+    filtered: {
+      title: "Filtered Search",
+      description: "Search with multiple filters",
+      code: `GET /api/participants?country=BE&scheme=9925&supportsInvoice=true&limit=50`
+    },
+    countrySearch: {
+      title: "Country-specific",
+      description: "Get participants by country",
+      code: `GET /api/participants/by-country/DE?page=1&limit=100`
+    },
+    count: {
+      title: "Get Count",
+      description: "Get total count with filters",
+      code: `GET /api/participants/count?country=FR&supportsInvoice=true`
+    },
+    checkParticipant: {
+      title: "Validate Participant",
+      description: "Check participant and document support",
+      code: `POST /api/check-participant\nContent-Type: application/json\n\n{
   "schemeID": "0208",
   "participantID": "1009049626",
   "documentType": "Invoice"
-}`
-    },
-    gln: {
-      title: "GLN Scheme",
-      description: "Validate a participant with GLN scheme",
-      code: `{
-  "schemeID": "0088",
-  "participantID": "008874732PR00000000"
 }`
     }
   };
 
   // Response examples
   const responseExamples = {
-    found: {
-      title: "Participant Found",
-      description: "Participant exists and supports the document type",
+    participantsList: {
+      title: "Participants List Response",
+      description: "Paginated list of participants",
       code: `{
-  "participantID": "1009049626",
-  "schemeID": "0208",
-  "documentType": "Invoice",
-  "companyName": "Example Company AS",
-  "supportsDocumentType": true,
-  "matchType": "direct",
-  "foundIn": "neon_database",
-  "message": "✅ Invoice supported - Example Company AS",
-  "allDocumentTypes": ["Invoice", "CreditNote", "Order"],
-  "actualFullPid": "0208:1009049626"
+  "success": true,
+  "count": 50,
+  "totalCount": 8500,
+  "totalPages": 170,
+  "currentPage": 1,
+  "filters": {
+    "countryCode": "BE",
+    "schemeId": "9925",
+    "supportsInvoice": true
+  },
+  "data": [
+    {
+      "id": 146776,
+      "full_pid": "9925:be0862669993",
+      "scheme_id": "9925",
+      "endpoint_id": "be0862669993",
+      "supports_invoice": true,
+      "supports_creditnote": true,
+      "company_name": "K-Line Belgium NV",
+      "country_code": "BE",
+      "registration_date": "2023-05-15",
+      "document_types": ["Invoice", "CreditNote", "Order"],
+      "created_at": "2024-01-20T10:30:00Z"
+    }
+  ]
 }`
     },
-    notFound: {
-      title: "Participant Not Found",
-      description: "Participant not found with requested scheme",
+    countResponse: {
+      title: "Count Response",
+      description: "Total participant count",
       code: `{
-  "participantID": "1009049626",
-  "schemeID": "0088",
-  "documentType": "Invoice",
-  "companyName": null,
-  "supportsDocumentType": false,
-  "matchType": "not_found",
-  "foundIn": "none",
-  "message": "❌ Participant not found with scheme 0088",
-  "allDocumentTypes": [],
-  "alternativeSchemes": [
-    {
-      "scheme": "0208",
-      "participantId": "1009049626",
-      "companyName": "Example Company AS",
-      "documentTypes": ["Invoice", "CreditNote"]
-    }
-  ],
-  "note": "Participant not found with requested scheme, but potential matches found in directory."
+  "success": true,
+  "totalCount": 1250,
+  "filters": {
+    "countryCode": "FR",
+    "supportsInvoice": true
+  }
 }`
     },
-    alternative: {
-      title: "Alternative Schemes Found",
-      description: "Participant found with different schemes",
+    countriesResponse: {
+      title: "Countries List",
+      description: "Unique country codes",
       code: `{
-  "participantID": "1009049626",
-  "schemeID": "0088",
-  "documentType": "Invoice",
-  "companyName": "Example Company AS",
-  "supportsDocumentType": false,
-  "matchType": "alternative_schemes",
-  "foundIn": "neon_database",
-  "message": "⚠️ Participant not found with scheme 0088, but found with alternative schemes",
-  "allDocumentTypes": [],
-  "alternativeSchemes": [
-    {
-      "scheme": "0208",
-      "participantId": "1009049626",
-      "fullId": "0208:1009049626",
-      "companyName": "Example Company AS",
-      "documentTypes": ["Invoice", "CreditNote", "Order"],
-      "countryCode": "BE"
-    }
-  ],
-  "note": "Participant found with alternative schemes. Try using one of the schemes below."
+  "success": true,
+  "count": 45,
+  "countries": ["BE", "DE", "FR", "NL", "GB", "US", ...]
 }`
     }
   };
@@ -168,15 +227,12 @@ export default function ApiDocs() {
   ];
 
   const commonDocumentTypes = [
-    "Invoice",
-    "CreditNote", 
-    "Order",
-    "OrderResponse",
-    "Catalogue",
-    "DispatchAdvice",
-    "ApplicationResponse",
-    "PriceList",
-    "Statement"
+    "Invoice", "CreditNote", "Order", "OrderResponse", "Catalogue",
+    "DispatchAdvice", "ApplicationResponse", "PriceList", "Statement"
+  ];
+
+  const commonCountries = [
+    "BE", "DE", "FR", "NL", "GB", "US", "NO", "SE", "DK", "IT", "ES", "PL"
   ];
 
   return (
@@ -186,19 +242,11 @@ export default function ApiDocs() {
         <Box textAlign="center" className="api-header-box">
           <Fade in timeout={800}>
             <Box>
-              <Typography 
-                variant="h3" 
-                component="h1" 
-                className="api-main-title"
-              >
+              <Typography variant="h3" component="h1" className="api-main-title">
                 API Documentation
               </Typography>
-              <Typography 
-                variant="h6" 
-                color="text.secondary" 
-                className="api-subtitle"
-              >
-                Integrate Peppol participant validation into your applications
+              <Typography variant="h6" color="text.secondary" className="api-subtitle">
+                Complete Peppol participant data and validation APIs
               </Typography>
             </Box>
           </Fade>
@@ -222,30 +270,33 @@ export default function ApiDocs() {
               
               <Alert severity="info" sx={{ mt: 2, mb: 3 }}>
                 <Typography variant="body2">
-                  <strong>No API key required</strong> - For limited time this API is free to use for Peppol participant validation.
+                  <strong>No API key required</strong> - Free access to comprehensive Peppol participant data and validation.
                 </Typography>
               </Alert>
 
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={4}>
                   <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
-                    📍 Endpoint
-                  </Typography>
-                  <Box className="endpoint-box">
-                    <Typography variant="body2" className="endpoint-method">
-                      POST
-                    </Typography>
-                    <Typography variant="body1" className="endpoint-url">
-                      /check-participant
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
-                    ⚡ Usage
+                    📊 Data APIs
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Simply send a POST request with the participant details to validate and check document support.
+                    Access complete participant database with filtering, pagination, and search.
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
+                    🔍 Validation API
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Validate participants and check document type support in real-time.
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
+                    ⚡ Real-time
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Fresh data with comprehensive filtering and search capabilities.
                   </Typography>
                 </Grid>
               </Grid>
@@ -274,25 +325,25 @@ export default function ApiDocs() {
                   fullWidth 
                   className={`nav-button ${tabValue === 1 ? 'active' : ''}`}
                   onClick={() => setTabValue(1)}
-                  startIcon={<CodeIcon />}
+                  startIcon={<ApiIcon />}
                 >
-                  Request Format
+                  All Endpoints
                 </Button>
                 <Button 
                   fullWidth 
                   className={`nav-button ${tabValue === 2 ? 'active' : ''}`}
                   onClick={() => setTabValue(2)}
-                  startIcon={<ApiIcon />}
+                  startIcon={<CodeIcon />}
                 >
-                  Response Format
+                  Examples
                 </Button>
                 <Button 
                   fullWidth 
                   className={`nav-button ${tabValue === 3 ? 'active' : ''}`}
                   onClick={() => setTabValue(3)}
-                  startIcon={<CheckIcon />}
+                  startIcon={<GetAppIcon />}
                 >
-                  Examples
+                  Quick Start
                 </Button>
               </Box>
 
@@ -315,7 +366,22 @@ export default function ApiDocs() {
                 </Box>
 
                 <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mt: 3 }}>
-                  Common Document Types
+                  Common Countries
+                </Typography>
+                <Box className="common-chips">
+                  {commonCountries.map((country) => (
+                    <Chip
+                      key={country}
+                      label={country}
+                      size="small"
+                      variant="outlined"
+                      className="common-chip"
+                    />
+                  ))}
+                </Box>
+
+                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mt: 3 }}>
+                  Document Types
                 </Typography>
                 <Box className="common-chips">
                   {commonDocumentTypes.map((docType) => (
@@ -342,9 +408,9 @@ export default function ApiDocs() {
                 variant={isMobile ? "scrollable" : "standard"}
               >
                 <Tab label="Overview" />
-                <Tab label="Request Format" />
-                <Tab label="Response Format" />
+                <Tab label="Endpoints" />
                 <Tab label="Examples" />
+                <Tab label="Quick Start" />
               </Tabs>
 
               <Divider />
@@ -356,9 +422,8 @@ export default function ApiDocs() {
                 </Typography>
                 
                 <Typography variant="body1" paragraph>
-                  The Peppol Participant Check API provides real-time validation of Peppol participants 
-                  and document type support. It queries both the official Peppol directory and our 
-                  enhanced database to deliver comprehensive validation results.
+                  The Peppol Participant API provides comprehensive access to Peppol participant data, 
+                  including real-time validation, filtering, search, and detailed participant information.
                 </Typography>
 
                 <Grid container spacing={3} sx={{ mt: 2 }}>
@@ -366,10 +431,10 @@ export default function ApiDocs() {
                     <Card variant="outlined" className="feature-card">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary.main">
-                          🔍 Participant Validation
+                          📊 Complete Database
                         </Typography>
                         <Typography variant="body2">
-                          Verify if a participant exists in the Peppol network using their scheme and identifier.
+                          Access thousands of Peppol participants with detailed information including document support.
                         </Typography>
                       </CardContent>
                     </Card>
@@ -378,10 +443,10 @@ export default function ApiDocs() {
                     <Card variant="outlined" className="feature-card">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary.main">
-                          📄 Document Support
+                          🔍 Advanced Filtering
                         </Typography>
                         <Typography variant="body2">
-                          Check which document types a participant supports (Invoice, CreditNote, Order, etc.).
+                          Filter by country, scheme, document type, company name, and support status.
                         </Typography>
                       </CardContent>
                     </Card>
@@ -390,10 +455,10 @@ export default function ApiDocs() {
                     <Card variant="outlined" className="feature-card">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary.main">
-                          🔄 Alternative Schemes
+                          📄 Pagination & Search
                         </Typography>
                         <Typography variant="body2">
-                          Discover alternative identification schemes for the same participant.
+                          Efficient pagination with customizable limits and full-text search capabilities.
                         </Typography>
                       </CardContent>
                     </Card>
@@ -402,159 +467,130 @@ export default function ApiDocs() {
                     <Card variant="outlined" className="feature-card">
                       <CardContent>
                         <Typography variant="h6" gutterBottom color="primary.main">
-                          ⚡ Real-time Results
+                          ✅ Validation
                         </Typography>
                         <Typography variant="body2">
-                          Get instant validation results with comprehensive participant information.
+                          Real-time participant validation and document type support checking.
                         </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
                 </Grid>
+
+                <Box sx={{ mt: 4 }}>
+                  <Typography variant="h5" gutterBottom sx={{ color: 'primary.main' }}>
+                    Key Features
+                  </Typography>
+                  <List>
+                    <ListItem>
+                      <ListItemIcon>
+                        <SearchIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Advanced Search & Filtering" 
+                        secondary="Filter by multiple criteria including country, scheme, document types, and company name"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <GetAppIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Flexible Pagination" 
+                        secondary="Control page size up to 1000 records per request with efficient pagination"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <PublicIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Country & Scheme Data" 
+                        secondary="Access unique country codes and scheme IDs for dynamic filtering"
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <SchemaIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Document Type Support" 
+                        secondary="Check supported document types for each participant"
+                      />
+                    </ListItem>
+                  </List>
+                </Box>
               </TabPanel>
 
-              {/* Request Format Tab */}
+              {/* Endpoints Tab */}
               <TabPanel value={tabValue} index={1}>
                 <Typography variant="h4" gutterBottom className="section-title">
-                  Request Format
+                  API Endpoints
                 </Typography>
 
                 <Alert severity="info" sx={{ mb: 3 }}>
-                  Send a POST request to <code>/api/check-participant</code> with JSON payload.
+                  All endpoints return JSON responses. No authentication required.
                 </Alert>
 
-                <Box className="request-schema">
-                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
-                    Request Body Schema
-                  </Typography>
-                  
-                  <Card variant="outlined" className="schema-card">
+                {apiEndpoints.map((endpoint, index) => (
+                  <Card key={index} variant="outlined" sx={{ mb: 3 }}>
                     <CardContent>
-                      <Box className="schema-field">
-                        <Typography variant="subtitle1" className="field-name">
-                          schemeID
-                        </Typography>
-                        <Chip label="required" size="small" color="error" variant="outlined" />
-                        <Typography variant="body2" color="text.secondary">
-                          string - Participant identification scheme
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Chip 
+                          label={endpoint.method} 
+                          color={endpoint.method === 'POST' ? 'primary' : 'success'}
+                          variant="filled"
+                          sx={{ mr: 2 }}
+                        />
+                        <Typography variant="h6" component="code">
+                          {endpoint.path}
                         </Typography>
                       </Box>
                       
-                      <Box className="schema-field">
-                        <Typography variant="subtitle1" className="field-name">
-                          participantID
-                        </Typography>
-                        <Chip label="required" size="small" color="error" variant="outlined" />
-                        <Typography variant="body2" color="text.secondary">
-                          string - Participant identifier
-                        </Typography>
-                      </Box>
-                      
-                      <Box className="schema-field">
-                        <Typography variant="subtitle1" className="field-name">
-                          documentType
-                        </Typography>
-                        <Chip label="optional" size="small" variant="outlined" />
-                        <Typography variant="body2" color="text.secondary">
-                          string - Document type to check support for
-                        </Typography>
-                      </Box>
+                      <Typography variant="body2" color="text.secondary" paragraph>
+                        {endpoint.description}
+                      </Typography>
+
+                      {endpoint.parameters.length > 0 && (
+                        <>
+                          <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                            Parameters:
+                          </Typography>
+                          <Grid container spacing={1}>
+                            {endpoint.parameters.map((param, paramIndex) => (
+                              <Grid item xs={12} key={paramIndex}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="body2" sx={{ fontFamily: 'monospace', minWidth: 120 }}>
+                                    {param.name}
+                                  </Typography>
+                                  <Chip 
+                                    label={param.type} 
+                                    size="small" 
+                                    variant="outlined"
+                                    sx={{ fontFamily: 'monospace' }}
+                                  />
+                                  <Chip 
+                                    label={param.optional ? 'optional' : 'required'} 
+                                    size="small"
+                                    color={param.optional ? 'default' : 'error'}
+                                    variant="outlined"
+                                  />
+                                  <Typography variant="body2" color="text.secondary">
+                                    {param.desc}
+                                  </Typography>
+                                </Box>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
-                </Box>
-
-                <Box className="code-example-box" sx={{ mt: 4 }}>
-                  <Box className="code-header">
-                    <Typography variant="h6">
-                      Example Request
-                    </Typography>
-                    <Button
-                      size="small"
-                      startIcon={copiedCode === 'basic-request' ? <CheckIcon /> : <ContentCopyIcon />}
-                      onClick={() => copyToClipboard(requestExamples.basic.code, 'basic-request')}
-                    >
-                      {copiedCode === 'basic-request' ? 'Copied!' : 'Copy'}
-                    </Button>
-                  </Box>
-                  <Paper variant="outlined" className="code-paper">
-                    <pre className="code-block">
-                      {`POST /api/check-participant\nContent-Type: application/json\n\n${requestExamples.basic.code}`}
-                    </pre>
-                  </Paper>
-                </Box>
-              </TabPanel>
-
-              {/* Response Format Tab */}
-              <TabPanel value={tabValue} index={2}>
-                <Typography variant="h4" gutterBottom className="section-title">
-                  Response Format
-                </Typography>
-
-                <Box className="response-schema">
-                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
-                    Response Body Schema
-                  </Typography>
-                  
-                  <Card variant="outlined" className="schema-card">
-                    <CardContent>
-                      {[
-                        { name: 'participantID', type: 'string', desc: 'The participant ID from request' },
-                        { name: 'schemeID', type: 'string', desc: 'The scheme ID from request' },
-                        { name: 'documentType', type: 'string | null', desc: 'Requested document type' },
-                        { name: 'companyName', type: 'string | null', desc: 'Participant company name' },
-                        { name: 'supportsDocumentType', type: 'boolean | null', desc: 'Document type support status' },
-                        { name: 'matchType', type: 'string', desc: 'How the participant was matched' },
-                        { name: 'foundIn', type: 'string', desc: 'Data source where participant was found' },
-                        { name: 'message', type: 'string', desc: 'Human-readable result message' },
-                        { name: 'allDocumentTypes', type: 'string[]', desc: 'All supported document types' },
-                        { name: 'actualFullPid', type: 'string', desc: 'Full participant identifier' },
-                        { name: 'alternativeSchemes', type: 'array | null', desc: 'Alternative scheme matches' },
-                        { name: 'note', type: 'string | null', desc: 'Additional information' }
-                      ].map((field) => (
-                        <Box key={field.name} className="schema-field">
-                          <Typography variant="subtitle1" className="field-name">
-                            {field.name}
-                          </Typography>
-                          <Chip 
-                            label={field.type} 
-                            size="small" 
-                            variant="outlined" 
-                            sx={{ fontFamily: 'monospace' }}
-                          />
-                          <Typography variant="body2" color="text.secondary">
-                            {field.desc}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </Box>
-
-                <Box className="match-types" sx={{ mt: 4 }}>
-                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
-                    Match Types
-                  </Typography>
-                  <Grid container spacing={2}>
-                    {[
-                      { type: 'direct', desc: 'Exact match with scheme and participant ID' },
-                      { type: 'endpoint_match', desc: 'Match by endpoint ID only' },
-                      { type: 'normalized_match', desc: 'Match with normalized participant ID' },
-                      { type: 'alternative_schemes', desc: 'Found with different schemes' },
-                      { type: 'not_found', desc: 'No match found' }
-                    ].map((item) => (
-                      <Grid item xs={12} md={6} key={item.type}>
-                        <Chip label={item.type} variant="outlined" sx={{ mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {item.desc}
-                        </Typography>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Box>
+                ))}
               </TabPanel>
 
               {/* Examples Tab */}
-              <TabPanel value={tabValue} index={3}>
+              <TabPanel value={tabValue} index={2}>
                 <Typography variant="h4" gutterBottom className="section-title">
                   API Examples
                 </Typography>
@@ -578,7 +614,7 @@ export default function ApiDocs() {
                               </Typography>
                               <Box className="code-header">
                                 <Typography variant="caption" fontWeight={600}>
-                                  JSON Payload
+                                  {key === 'checkParticipant' ? 'HTTP Request' : 'URL'}
                                 </Typography>
                                 <Button
                                   size="small"
@@ -641,6 +677,107 @@ export default function ApiDocs() {
                   </Grid>
                 </Grid>
               </TabPanel>
+
+              {/* Quick Start Tab */}
+              <TabPanel value={tabValue} index={3}>
+                <Typography variant="h4" gutterBottom className="section-title">
+                  Quick Start Guide
+                </Typography>
+
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h5" gutterBottom sx={{ color: 'primary.main' }}>
+                    1. Get All Participants
+                  </Typography>
+                  <Typography variant="body1" paragraph>
+                    Start by fetching participants with pagination:
+                  </Typography>
+                  
+                  <Box className="code-example-box">
+                    <Box className="code-header">
+                      <Typography variant="h6">
+                        Example Request
+                      </Typography>
+                      <Button
+                        size="small"
+                        startIcon={copiedCode === 'quickstart-1' ? <CheckIcon /> : <ContentCopyIcon />}
+                        onClick={() => copyToClipboard(requestExamples.getAll.code, 'quickstart-1')}
+                      >
+                        {copiedCode === 'quickstart-1' ? 'Copied!' : 'Copy'}
+                      </Button>
+                    </Box>
+                    <Paper variant="outlined" className="code-paper">
+                      <pre className="code-block">
+                        {requestExamples.getAll.code}
+                      </pre>
+                    </Paper>
+                  </Box>
+                </Box>
+
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h5" gutterBottom sx={{ color: 'primary.main' }}>
+                    2. Filter Participants
+                  </Typography>
+                  <Typography variant="body1" paragraph>
+                    Use filters to find specific participants:
+                  </Typography>
+                  
+                  <Box className="code-example-box">
+                    <Box className="code-header">
+                      <Typography variant="h6">
+                        Example: Belgian participants with invoice support
+                      </Typography>
+                      <Button
+                        size="small"
+                        startIcon={copiedCode === 'quickstart-2' ? <CheckIcon /> : <ContentCopyIcon />}
+                        onClick={() => copyToClipboard(requestExamples.filtered.code, 'quickstart-2')}
+                      >
+                        {copiedCode === 'quickstart-2' ? 'Copied!' : 'Copy'}
+                      </Button>
+                    </Box>
+                    <Paper variant="outlined" className="code-paper">
+                      <pre className="code-block">
+                        {requestExamples.filtered.code}
+                      </pre>
+                    </Paper>
+                  </Box>
+                </Box>
+
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h5" gutterBottom sx={{ color: 'primary.main' }}>
+                    3. Validate Specific Participant
+                  </Typography>
+                  <Typography variant="body1" paragraph>
+                    Check if a participant exists and supports specific documents:
+                  </Typography>
+                  
+                  <Box className="code-example-box">
+                    <Box className="code-header">
+                      <Typography variant="h6">
+                        Example Validation Request
+                      </Typography>
+                      <Button
+                        size="small"
+                        startIcon={copiedCode === 'quickstart-3' ? <CheckIcon /> : <ContentCopyIcon />}
+                        onClick={() => copyToClipboard(requestExamples.checkParticipant.code, 'quickstart-3')}
+                      >
+                        {copiedCode === 'quickstart-3' ? 'Copied!' : 'Copy'}
+                      </Button>
+                    </Box>
+                    <Paper variant="outlined" className="code-paper">
+                      <pre className="code-block">
+                        {requestExamples.checkParticipant.code}
+                      </pre>
+                    </Paper>
+                  </Box>
+                </Box>
+
+                <Alert severity="success">
+                  <Typography variant="body2">
+                    <strong>Pro Tip:</strong> Use the count endpoint first to get total numbers before fetching large datasets.
+                    Combine multiple filters for precise searches.
+                  </Typography>
+                </Alert>
+              </TabPanel>
             </Paper>
           </Grid>
         </Grid>
@@ -649,10 +786,10 @@ export default function ApiDocs() {
         <Fade in timeout={1000}>
           <Box className="cta-section">
             <Typography variant="h5" gutterBottom textAlign="center">
-              Ready to Integrate?
+              Ready to Build?
             </Typography>
             <Typography variant="body1" color="text.secondary" textAlign="center" paragraph>
-              Start validating Peppol participants in your applications today.
+              Start integrating comprehensive Peppol participant data into your applications.
             </Typography>
             <Box className="cta-buttons">
               <Button 
@@ -666,10 +803,10 @@ export default function ApiDocs() {
               <Button 
                 variant="outlined" 
                 size="large"
-                onClick={() => copyToClipboard('https://peppolchecker.online/api/check-participant', 'endpoint')}
+                onClick={() => copyToClipboard('https://peppolchecker.online/api', 'base-url')}
                 className="cta-button"
               >
-                Copy Endpoint URL
+                Copy Base URL
               </Button>
             </Box>
           </Box>
