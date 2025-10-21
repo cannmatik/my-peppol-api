@@ -5,18 +5,20 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { useTheme } from "@mui/material/styles"; // <-- bu eklendi
+import { useTheme } from "@mui/material/styles";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
+import DescriptionIcon from "@mui/icons-material/Description"; // <-- Yeni icon
 
 export default function Navbar() {
-  const theme = useTheme(); // <-- theme burada alınır
+  const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
 
   const navItems = [
     { label: 'Home', href: '/' },
+    { label: 'XML to PDF', href: '/xml-to-pdf' },
     { label: 'API Docs', href: '/api-docs' }
   ];
 
@@ -36,7 +38,7 @@ export default function Navbar() {
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, background: 'linear-gradient(135deg, #101828 0%, #175cd3 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Peppol Check
+          Peppol Tools
         </Typography>
         <IconButton onClick={toggleDrawer(false)}><CloseIcon /></IconButton>
       </Box>
@@ -47,6 +49,7 @@ export default function Navbar() {
             <Button
               fullWidth
               href={item.href}
+              startIcon={item.label === 'XML to PDF' ? <DescriptionIcon sx={{ fontSize: 18 }} /> : null}
               sx={{
                 justifyContent: 'flex-start',
                 padding: '12px 16px',
@@ -56,7 +59,11 @@ export default function Navbar() {
                 color: isActive(item.href) ? '#175cd3' : '#667085',
                 backgroundColor: isActive(item.href) ? '#f0f9ff' : 'transparent',
                 border: isActive(item.href) ? '1px solid #175cd3' : '1px solid transparent',
-                '&:hover': { backgroundColor: '#f8fafc', color: '#101828' }
+                '&:hover': { 
+                  backgroundColor: '#f8fafc', 
+                  color: '#101828',
+                  borderColor: isActive(item.href) ? '#175cd3' : '#e2e8f0'
+                }
               }}
             >
               {item.label}
@@ -76,30 +83,44 @@ export default function Navbar() {
       <AppBar position="sticky" elevation={0} sx={{ backgroundColor: '#ffffff', color: '#101828', boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1)', borderBottom: '1px solid #e2e8f0' }}>
         <Toolbar sx={{ minHeight: { xs: '60px', md: '64px' }, px: { xs: 2, sm: 3 }, maxWidth: '1200px', mx: 'auto', width: '100%' }}>
           <Typography variant="h6" component="a" href="/" sx={{ flexGrow: { xs: 1, md: 0 }, fontWeight: 700, fontSize: { xs: '1.1rem', md: '1.25rem' }, background: 'linear-gradient(135deg, #101828 0%, #175cd3 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textDecoration: 'none', '&:hover': { opacity: 0.8 } }}>
-            Peppol Participant Check
+            Peppol Tools
           </Typography>
 
           {!isMobile && (
             <Box sx={{ display: 'flex', gap: 1, flexGrow: 1, justifyContent: 'center', mx: 4 }}>
               {navItems.map((item) => (
-                <Button key={item.label} href={item.href} sx={{
-                  fontWeight: isActive(item.href) ? 600 : 500,
-                  color: isActive(item.href) ? '#175cd3' : '#667085',
-                  backgroundColor: isActive(item.href) ? '#f0f9ff' : 'transparent',
-                  border: isActive(item.href) ? '1px solid #175cd3' : '1px solid transparent',
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  textTransform: 'none',
-                  fontSize: '0.9rem',
-                  '&:hover': { backgroundColor: '#f8fafc', color: '#101828' }
-                }}>
+                <Button 
+                  key={item.label} 
+                  href={item.href}
+                  startIcon={item.label === 'XML to PDF' ? <DescriptionIcon sx={{ fontSize: 16 }} /> : null}
+                  sx={{
+                    fontWeight: isActive(item.href) ? 600 : 500,
+                    color: isActive(item.href) ? '#175cd3' : '#667085',
+                    backgroundColor: isActive(item.href) ? '#f0f9ff' : 'transparent',
+                    border: isActive(item.href) ? '1px solid #175cd3' : '1px solid transparent',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    minWidth: 'auto',
+                    '&:hover': { 
+                      backgroundColor: '#f8fafc', 
+                      color: '#101828',
+                      borderColor: isActive(item.href) ? '#175cd3' : '#e2e8f0'
+                    }
+                  }}
+                >
                   {item.label}
                 </Button>
               ))}
             </Box>
           )}
 
-          {!isMobile && <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>by Can Matik</Typography>}
+          {!isMobile && (
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
+              by Can Matik
+            </Typography>
+          )}
 
           {isMobile && (
             <IconButton edge="end" color="inherit" aria-label="menu" onClick={toggleDrawer(true)} sx={{ color: '#101828', p: 1 }}>

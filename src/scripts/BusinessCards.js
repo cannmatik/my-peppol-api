@@ -9,16 +9,14 @@ const { Client } = pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log("🚀 FINAL BUILD Starting with XML Business Cards...");
+console.log("😎 MATIK BUILD Starting Download XML Business Cards...");
 
 const EXPORT_URLS = {
   xml: "https://test-directory.peppol.eu/export/businesscards",
-  json: "https://test-directory.peppol.eu/export/businesscards-json"
 };
 
 const FILE_PATHS = {
   xml: path.join(__dirname, "../app/data/directory-export-business-cards.xml"),
-  json: path.join(__dirname, "../app/data/peppol-businesscards.json")
 };
 
 async function getNeonClient() {
