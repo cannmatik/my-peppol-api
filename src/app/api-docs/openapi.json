@@ -1,0 +1,201 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Peppol Tools API",
+    "version": "1.0.0",
+    "description": "Comprehensive API documentation for Peppol Tools services — participant lookup, PDF generation, and participant registry access."
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local development" },
+    { "url": "https://your-production-domain.com", "description": "Production" }
+  ],
+  "paths": {
+    "/api/check": {
+      "post": {
+        "summary": "Check Participant",
+        "description": "Checks if a Peppol participant exists in the Neon database or fallback CSV cache. Returns participant details and document-type support.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["schemeID", "participantID"],
+                "properties": {
+                  "schemeID": { "type": "string", "example": "GLN" },
+                  "participantID": { "type": "string", "example": "BE0405746050" },
+                  "documentType": { "type": "string", "example": "Invoice" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Participant lookup result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "participantID": { "type": "string" },
+                    "schemeID": { "type": "string" },
+                    "companyName": { "type": "string" },
+                    "documentType": { "type": "string", "nullable": true },
+                    "supportsDocumentType": { "type": ["boolean", "null"] },
+                    "matchType": { "type": "string" },
+                    "foundIn": { "type": "string" },
+                    "message": { "type": "string" },
+                    "allDocumentTypes": { "type": "array", "items": { "type": "string" } }
+                  }
+                },
+                "example": {
+                  "participantID": "BE0405746050",
+                  "schemeID": "GLN",
+                  "companyName": "Example Ltd",
+                  "documentType": "Invoice",
+                  "supportsDocumentType": true,
+                  "matchType": "direct",
+                  "foundIn": "neon_database",
+                  "message": "✅ Invoice supported - Example Ltd",
+                  "allDocumentTypes": ["Invoice", "CreditNote"]
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing required fields" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+
+    "/api/participants": {
+      "get": {
+        "summary": "List Participants",
+        "description": "Fetches participants with optional filters such as country, scheme, company name, and document type. Returns paginated results.",
+        "parameters": [
+          { "name": "countryCode", "in": "query", "schema": { "type": "string" }, "example": "BE" },
+          { "name": "schemeId", "in": "query", "schema": { "type": "string" }, "example": "GLN" },
+          { "name": "companyName", "in": "query", "schema": { "type": "string" }, "example": "Example Ltd" },
+          { "name": "documentType", "in": "query", "schema": { "type": "string" }, "example": "Invoice" },
+          { "name": "supportsInvoice", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "supportsCreditnote", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filtered list of participants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "totalCount": { "type": "integer" },
+                    "currentPage": { "type": "integer" },
+                    "totalPages": { "type": "integer" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "company_name": { "type": "string" },
+                          "scheme_id": { "type": "string" },
+                          "endpoint_id": { "type": "string" },
+                          "country_code": { "type": "string" },
+                          "document_types": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/participants/countries": {
+      "get": {
+        "summary": "List Available Countries",
+        "description": "Fetches all unique country codes from the participants table.",
+        "responses": {
+          "200": {
+            "description": "List of countries",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "count": 7,
+                  "countries": ["BE", "NL", "FR", "DE", "TR"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/participants/schemes": {
+      "get": {
+        "summary": "List Available Schemes",
+        "description": "Fetches all unique scheme IDs registered in the participants table.",
+        "responses": {
+          "200": {
+            "description": "List of schemes",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "count": 5,
+                  "schemes": ["GLN", "VAT", "LEI", "DUNS", "NHRN"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/pdf": {
+      "post": {
+        "summary": "Generate PDF from XML",
+        "description": "Uploads a UBL XML file, applies XSLT transformation using SaxonJS, and returns a generated PDF.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "xml": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The XML file to convert"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generated PDF file",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "description": "XML missing or invalid" },
+          "500": { "description": "Transformation or rendering error" }
+        }
+      }
+    }
+  }
+}

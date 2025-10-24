@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import SaxonJS from "saxon-js";
+import SaxonJS from "saxonjs-he";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import path from "path";
@@ -16,6 +16,29 @@ export async function POST(request) {
 
     // XML içeriğini oku
     const xmlContent = await xmlFile.text();
+
+    // XML'den dosya adı için gerekli bilgileri çek
+    let supplierId = "UNKNOWN";
+    let invoiceId = "UNKNOWN";
+
+    try {
+      // Basit XML parsing ile ID'leri çek
+      const invoiceIdMatch = xmlContent.match(/<cbc:ID>([^<]+)<\/cbc:ID>/);
+      if (invoiceIdMatch) {
+        invoiceId = invoiceIdMatch[1];
+      }
+
+      // Supplier ID'yi çek (BE0405746050)
+      const supplierIdMatch = xmlContent.match(/<cac:AccountingSupplierParty>[\s\S]*?<cac:PartyIdentification>[\s\S]*?<cbc:ID>([^<]+)<\/cbc:ID>/);
+      if (supplierIdMatch) {
+        supplierId = supplierIdMatch[1];
+      }
+    } catch (parseError) {
+      console.warn("XML parsing hatası, varsayılan dosya adı kullanılacak:", parseError.message);
+    }
+
+    // Dosya adını oluştur
+    const fileName = `${supplierId}_${invoiceId}.pdf`;
 
     // SEF/XSLT yolları
     const sefPath = path.join(process.cwd(), "public", "stylesheet-ubl.sef.json");
@@ -73,46 +96,28 @@ export async function POST(request) {
 
     const page = await browser.newPage();
 
-    // HTML: sadece kredi satırı ekliyoruz
+    // XSLT'nin kendi CSS'ini koruyarak sadece credit satırı ekleyelim
     const optimizedHtml = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-      line-height: 1.3;
-      color: #000;
-      background: #fff;
-      margin: 0;
-      padding: 15px;
-    }
-    .container { width: 100%; max-width: 100%; }
-    table { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 11px; }
-    th, td { padding: 3px 5px; border: 1px solid #ddd; vertical-align: top; }
-    h1, h2, h3, h4 { margin: 8px 0 5px 0; padding: 0; line-height: 1.1; }
-    h1 { font-size: 18px; }
-    h2 { font-size: 16px; }
-    h3 { font-size: 14px; }
-    h4 { font-size: 12px; }
-    p, div { margin: 2px 0; padding: 0; }
+    /* XSLT'nin CSS'ine müdahale etmiyoruz, sadece credit için minimal stil */
     .credit {
-      margin-top: 16px;
+      margin-top: 20px;
       font-size: 10px;
       color: #666;
       text-align: right;
       page-break-inside: avoid;
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    ${htmlContent}
-    <div class="credit">Developed by Can Matik</div>
-  </div>
+  ${htmlContent}
+  <div class="credit">Developed by Can Matik</div>
 </body>
 </html>
     `;
@@ -135,7 +140,7 @@ export async function POST(request) {
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": "attachment; filename=output.pdf",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
       },
     });
   } catch (error) {

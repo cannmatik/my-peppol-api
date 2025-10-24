@@ -1,20 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Container,
   Paper,
   Button,
   Typography,
   Box,
-  Card,
-  CardContent,
-  Chip,
-  Alert,
-  CircularProgress,
   Grid,
   Fade,
   Zoom,
-  IconButton
+  Collapse,
+  LinearProgress,
+  CircularProgress,
+  IconButton,
 } from "@mui/material";
 import UploadIcon from "@mui/icons-material/Upload";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -22,359 +20,659 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import InfoIcon from "@mui/icons-material/Info";
 import DescriptionIcon from "@mui/icons-material/Description";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import { theme } from "../theme";
 
-// 🔹 API Docs stil dosyası
-import "./api-docs.css"; // api-main-title, content-paper, cta-button, vb. sınıflar için
+import "./xml-to-pdf.css";
 
 export default function XmlToPdfPage() {
-  const [xmlFile, setXmlFile] = useState(null);
-  const [preview, setPreview] = useState("");
-  const [error, setError] = useState("");
+  const [xmlFiles, setXmlFiles] = useState([]);
+  const [statusList, setStatusList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [conversionResult, setConversionResult] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [currentFile, setCurrentFile] = useState("");
+  const [allCompleted, setAllCompleted] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const dropRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".xml")) {
-      setError("Please select an XML file");
-      return;
-    }
-    setXmlFile(file);
-    setPreview(`Selected file: ${file.name}`);
-    setError("");
-    setConversionResult(null);
+  useEffect(() => {
+    const dropArea = dropRef.current;
+    if (!dropArea) return;
+
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      dropArea.classList.add("drag-over");
+    };
+    const handleDragLeave = () => {
+      dropArea.classList.remove("drag-over");
+    };
+    const handleDrop = (e) => {
+      e.preventDefault();
+      dropArea.classList.remove("drag-over");
+      const files = Array.from(e.dataTransfer.files).filter((f) =>
+        f.name.toLowerCase().endsWith(".xml")
+      );
+      handleAddFiles(files);
+    };
+
+    dropArea.addEventListener("dragover", handleDragOver);
+    dropArea.addEventListener("dragleave", handleDragLeave);
+    dropArea.addEventListener("drop", handleDrop);
+
+    return () => {
+      dropArea.removeEventListener("dragover", handleDragOver);
+      dropArea.removeEventListener("dragleave", handleDragLeave);
+      dropArea.removeEventListener("drop", handleDrop);
+    };
+  }, []);
+
+  const handleAddFiles = (files) => {
+    const limited = files.slice(0, 10);
+
+    const nameCount = {};
+    const nameMap = new Map();
+
+    const renamedFiles = limited.map((file) => {
+      const ext = file.name.split(".").pop();
+      const base = file.name.replace(`.${ext}`, "");
+
+      if (!nameMap.has(base)) {
+        nameMap.set(base, 1);
+        return file;
+      } else {
+        const count = nameMap.get(base) + 1;
+        nameMap.set(base, count);
+        const newName = `${base}_${count.toString().padStart(3, "0")}.${ext}`;
+        return new File([file], newName, { type: file.type });
+      }
+    });
+
+    setXmlFiles(renamedFiles);
+    setStatusList(
+      renamedFiles.map((f) => ({ name: f.name, status: "pending" }))
+    );
+    setAllCompleted(false);
+    setHasError(false);
+  };
+
+  const handleFileChange = (e) => {
+    handleAddFiles(Array.from(e.target.files));
+  };
+
+  const updateStatus = (name, newStatus) => {
+    setStatusList((prev) =>
+      prev.map((f) => (f.name === name ? { ...f, status: newStatus } : f))
+    );
   };
 
   const handleConvert = async () => {
-    if (!xmlFile) {
-      setError("Please select an XML file");
-      return;
-    }
+    if (xmlFiles.length === 0) return;
+
     setLoading(true);
-    setError("");
+    setProgress(0);
+    setCurrentFile("");
+    setAllCompleted(false);
+    setHasError(false);
 
-    const formData = new FormData();
-    formData.append("xml", xmlFile);
+    const zip = new JSZip();
+    let completed = 0;
+    let errorFound = false;
 
-    try {
-      const response = await fetch("/api/xml-to-pdf", {
-        method: "POST",
-        body: formData,
-      });
+    const usedFileNames = new Set();
+    let singlePdfBlob = null;
+    let singleFileName = "";
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error ?? "API error");
+    for (let i = 0; i < xmlFiles.length; i++) {
+      const file = xmlFiles[i];
+      setCurrentFile(file.name);
+      updateStatus(file.name, "processing");
+
+      try {
+        const formData = new FormData();
+        formData.append("xml", file);
+        const response = await fetch("/api/xml-to-pdf", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error("Conversion failed");
+
+        const contentDisposition = response.headers.get("Content-Disposition");
+        let fileName = "converted.pdf";
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="([^"]+)"/);
+          if (match) fileName = match[1];
+        }
+
+        const blob = await response.blob();
+
+        if (xmlFiles.length === 1) {
+          singlePdfBlob = blob;
+          singleFileName = fileName;
+        } else {
+          let finalFileName = fileName;
+          if (usedFileNames.has(fileName)) {
+            const base = fileName.replace(".pdf", "");
+            let counter = 1;
+            while (
+              usedFileNames.has(
+                `${base}_${counter.toString().padStart(3, "0")}.pdf`
+              )
+            ) {
+              counter++;
+            }
+            finalFileName = `${base}_${counter.toString().padStart(3, "0")}.pdf`;
+          }
+
+          usedFileNames.add(finalFileName);
+          const arrayBuffer = await blob.arrayBuffer();
+          zip.file(finalFileName, arrayBuffer);
+        }
+
+        updateStatus(file.name, "success");
+      } catch (err) {
+        console.error("Conversion error:", err);
+        updateStatus(file.name, "failed");
+        errorFound = true;
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "converted-document.pdf";
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      setConversionResult({
-        success: true,
-        message: "PDF successfully generated and downloaded",
-        fileName: "converted-document.pdf",
-      });
-      setError("");
-    } catch (err) {
-      setError("PDF conversion error: " + err.message);
-      setConversionResult(null);
-    } finally {
-      setLoading(false);
+      completed++;
+      setProgress(Math.round((completed / xmlFiles.length) * 100));
     }
+
+    if (!errorFound) {
+      if (xmlFiles.length === 1 && singlePdfBlob) {
+        saveAs(singlePdfBlob, singleFileName);
+      } else if (xmlFiles.length > 1) {
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        saveAs(zipBlob, "converted_files.zip");
+      }
+    }
+
+    setHasError(errorFound);
+    setLoading(false);
+    setAllCompleted(!errorFound);
   };
 
-  const fileExamples = [
-    { name: "UBL Invoice", type: "INV", description: "Standard commercial invoice" },
-    { name: "UBL Credit Note", type: "CN", description: "Credit note document" },
-    { name: "UBL Order", type: "ORD", description: "Purchase order" },
-  ];
+  useEffect(() => {
+    if (allCompleted && !hasError) {
+      const timer = setTimeout(() => {
+        setStatusList([]);
+        setProgress(0);
+        setAllCompleted(false);
+        setHasError(false);
+        setCurrentFile("");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [allCompleted, hasError]);
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
+  const handleReset = () => {
+    setXmlFiles([]);
+    setStatusList([]);
+    setProgress(0);
+    setAllCompleted(false);
+    setHasError(false);
+    setCurrentFile("");
+    setExpanded(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
-    <>
-      <Container maxWidth="lg" className="api-docs-container">
-        {/* Header */}
-        <Box textAlign="center" className="api-header-box">
-          <Fade in timeout={800}>
-            <Box>
-              <Typography
-                component="h1"
-                className="api-main-title"
-                sx={{ mb: 2 }}
+    <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 4 }, py: 4 }}>
+      <Box textAlign="center" sx={{ mt: 4, mb: 4 }}>
+        <Fade in timeout={800}>
+          <Box>
+            <Typography variant="h4" component="h1">
+              XML to PDF Converter
+            </Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mt: 1.5, maxWidth: "600px", mx: "auto" }}
+            >
+              Upload or drag XML files (up to 10). Converts to PDF & downloads as{" "}
+              {xmlFiles.length === 1 ? "PDF" : "ZIP"}.
+            </Typography>
+          </Box>
+        </Fade>
+      </Box>
+
+      <Box>
+        <Grid
+          container
+          spacing={4}
+          justifyContent="center"
+          alignItems="stretch"
+        >
+          <Grid item xs={12} md={5}>
+            <Zoom in timeout={600}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 4,
+                  border: `1px solid ${theme.palette.grey[200]}`,
+                  borderRadius: theme.shape.borderRadius,
+                  bgcolor: theme.palette.background.paper,
+                  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    boxShadow: "0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.05)",
+                  },
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                  minHeight: "500px",
+                }}
               >
-                XML to PDF Converter
-              </Typography>
-              <Typography
-                className="api-subtitle"
-                sx={{ lineHeight: 1.6 }}
-              >
-                Convert UBL XML documents to professional PDF invoices with perfect formatting
-              </Typography>
-            </Box>
-          </Fade>
-        </Box>
-
-        {/* Main Content */}
-        <Box>
-          <Grid container spacing={4} justifyContent="center" className="api-main-grid">
-            {/* Left: Upload Panel */}
-            <Grid item xs={12} md={6} lg={5}>
-              <Zoom in timeout={600}>
-                {/* content-paper tabanı + quick-start-card görünümü */}
-                <Paper elevation={0} className="content-paper quick-start-card">
-                  <Box className="quick-start-content">
-                    {/* Upload Area */}
-                    <Box sx={{ textAlign: "center" }}>
-                      <Box sx={{ mb: 3 }}>
-                        <DescriptionIcon className="quick-start-icon" />
-                      </Box>
-
-                      <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }} color="text.primary">
-                        Upload XML File
-                      </Typography>
-                      <Typography color="text.secondary" sx={{ mb: 3 }}>
-                        Select your UBL XML document to convert to professional PDF format
-                      </Typography>
-
-                      <Button
-                        variant="outlined"
-                        component="label"
-                        startIcon={<UploadIcon />}
-                        sx={{
-                          borderRadius: 2,
-                          px: 3,
-                          py: 1.2,
-                          fontWeight: 600,
-                          border: "2px dashed #e2e8f0",
-                          textTransform: "none",
-                          "&:hover": { border: "2px dashed #175cd3", background: "#f0f9ff" },
-                        }}
-                      >
-                        Choose XML File
-                        <input type="file" accept=".xml" hidden onChange={handleFileChange} />
-                      </Button>
-
-                      {preview && (
-                        <Fade in timeout={300}>
-                          {/* endpoint-box görünümü (beyaz + border + radius) */}
-                          <Box className="endpoint-box" sx={{ mt: 2, justifyContent: "center" }}>
-                            <CheckCircleIcon color="success" fontSize="small" />
-                            <Typography fontWeight={600} color="text.primary">
-                              {preview}
-                            </Typography>
-                          </Box>
-                        </Fade>
-                      )}
+                <Box
+                  ref={dropRef}
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Box sx={{ flexShrink: 0 }}>
+                    <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                      <DescriptionIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
                     </Box>
+                    <Typography
+                      variant="h5"
+                      fontWeight={700}
+                      sx={{ mb: 1, textAlign: "center" }}
+                    >
+                      Upload XML Files
+                    </Typography>
+                    <Typography
+                      color="text.secondary"
+                      sx={{ mb: 3, textAlign: "center" }}
+                    >
+                      Drag & drop your XML files here or click below
+                    </Typography>
 
-                    {/* Convert Button - CTA */}
                     <Button
-                      fullWidth
-                      variant="contained"
-                      color="primary"
-                      disabled={!xmlFile || loading}
-                      onClick={handleConvert}
-                      className="cta-button"
-                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <DownloadIcon />}
-                      sx={{ mt: 2 }}
-                    >
-                      {loading ? "Converting..." : "Convert to PDF"}
-                    </Button>
-
-                    {/* Supported Types */}
-                    <Box sx={{ mt: 4 }}>
-                      <Typography fontWeight={700} color="text.primary" sx={{ mb: 2 }}>
-                        Supported Document Types
-                      </Typography>
-                      <Grid container spacing={2}>
-                        {fileExamples.map((ex, i) => (
-                          <Grid item xs={12} sm={4} key={i}>
-                            <Card variant="outlined" className="example-card">
-                              <CardContent sx={{ textAlign: "center" }}>
-                                <Typography fontWeight={700} sx={{ mb: 0.5 }} color="text.primary">
-                                  {ex.name}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                                  {ex.description}
-                                </Typography>
-                                <Chip label={ex.type} size="small" color="primary" />
-                              </CardContent>
-                            </Card>
-                          </Grid>
-                        ))}
-                      </Grid>
-                    </Box>
-                  </Box>
-                </Paper>
-              </Zoom>
-            </Grid>
-
-            {/* Right: Result / Loading */}
-            <Grid item xs={12} md={6} lg={7}>
-              <Box sx={{ minHeight: 600 }}>
-                {loading && (
-                  <Fade in timeout={500}>
-                    <Paper elevation={0} className="content-paper" sx={{ p: 8, textAlign: "center" }}>
-                      <CircularProgress size={80} color="primary" />
-                      <Typography variant="h4" sx={{ mt: 3, mb: 1, fontWeight: 700 }} color="text.primary">
-                        Converting XML to PDF...
-                      </Typography>
-                      <Typography color="text.secondary">
-                        Processing your document and generating PDF
-                      </Typography>
-                    </Paper>
-                  </Fade>
-                )}
-
-                {error && (
-                  <Fade in timeout={500}>
-                    <Alert
-                      severity="error"
+                      variant="outlined"
+                      component="label"
+                      startIcon={<UploadIcon />}
                       sx={{
-                        mb: 3,
-                        borderRadius: 2,
-                        alignItems: "center",
-                        backgroundColor: "#fef2f2",
-                        color: "#dc2626",
-                        border: "1px solid #fecaca",
-                        p: 3,
+                        borderRadius: theme.shape.borderRadius,
+                        px: 3,
+                        py: 1.2,
+                        fontWeight: 600,
+                        border: `2px dashed ${theme.palette.grey[200]}`,
+                        textTransform: "none",
+                        width: "100%",
+                        "&:hover": {
+                          border: `2px dashed ${theme.palette.primary.main}`,
+                          bgcolor: theme.palette.primary.light,
+                        },
                       }}
-                      action={
-                        <IconButton size="small" onClick={() => setError(null)}>
-                          <CancelIcon fontSize="small" />
-                        </IconButton>
-                      }
                     >
-                      <Typography variant="h6" fontWeight={700}>Conversion Error</Typography>
-                      <Typography variant="body2" sx={{ mt: 1 }}>{error}</Typography>
-                    </Alert>
-                  </Fade>
-                )}
+                      Choose XML Files
+                      <input
+                        type="file"
+                        accept=".xml"
+                        hidden
+                        multiple
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                      />
+                    </Button>
+                  </Box>
 
-                {conversionResult && (
-                  <Zoom in timeout={500}>
-                    <Paper elevation={0} className="content-paper" sx={{ p: 5 }}>
-                      {/* Success Header */}
-                      <Box sx={{
+                  {xmlFiles.length > 0 && (
+                    <Box
+                      sx={{
+                        mt: 3,
+                        flex: 1,
                         display: "flex",
-                        alignItems: "center",
-                        mb: 4,
-                        justifyContent: "center",
-                        gap: 12,
-                        flexDirection: { xs: "column", md: "row" },
-                        textAlign: { xs: "center", md: "left" },
-                      }}>
-                        <Box sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          backgroundColor: "#f0fdf4",
-                          color: "#059669",
+                        flexDirection: "column",
+                        minHeight: 0,
+                      }}
+                    >
+                      <Box
+                        sx={{
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center"
-                        }}>
-                          <CheckCircleIcon sx={{ fontSize: 32 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h3" sx={{ fontWeight: 800, mb: 1 }} color="text.primary">
-                            Conversion Successful
-                          </Typography>
-                          <Typography variant="h6" color="text.secondary">
-                            Your PDF has been generated and downloaded automatically
-                          </Typography>
-                        </Box>
+                          justifyContent: "space-between",
+                          cursor: "pointer",
+                          background: theme.palette.grey[50],
+                          borderRadius: theme.shape.borderRadius,
+                          p: "12px 16px",
+                          border: `1px solid ${theme.palette.grey[200]}`,
+                          flexShrink: 0,
+                        }}
+                        onClick={() => setExpanded((prev) => !prev)}
+                      >
+                        <Typography fontWeight={700} color="text.primary">
+                          {xmlFiles.length} Files Selected
+                        </Typography>
+                        <IconButton size="small">
+                          {expanded ? (
+                            <ExpandLessIcon sx={{ color: theme.palette.primary.main }} />
+                          ) : (
+                            <ExpandMoreIcon sx={{ color: theme.palette.primary.main }} />
+                          )}
+                        </IconButton>
                       </Box>
 
-                      {/* Details */}
-                      <Grid container spacing={3} sx={{ mb: 4 }}>
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ p: 3, backgroundColor: "#f8fafc", borderRadius: 2, border: "1px solid #e2e8f0" }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                              FILE NAME
-                            </Typography>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-                              <Typography fontWeight={700} color="text.primary">
-                                {conversionResult.fileName}
-                              </Typography>
-                              <IconButton
-                                size="small"
-                                onClick={() => copyToClipboard(conversionResult.fileName)}
-                                sx={{ color: "#667085" }}
+                      <Collapse
+                        in={expanded}
+                        timeout="auto"
+                        unmountOnExit
+                        sx={{ flex: 1, minHeight: 0 }}
+                      >
+                        <Box
+                          sx={{
+                            mt: 2,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                            height: "100%",
+                            overflowY: "auto",
+                            pr: 1,
+                            pb: 1,
+                          }}
+                        >
+                          {statusList.map((f, i) => (
+                            <Box
+                              key={i}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                background: theme.palette.background.paper,
+                                border: `1px solid ${theme.palette.grey[200]}`,
+                                borderRadius: theme.shape.borderRadius,
+                                p: "10px 12px",
+                                fontSize: "0.9rem",
+                                color:
+                                  f.status === "success"
+                                    ? theme.palette.success.main
+                                    : f.status === "failed"
+                                    ? theme.palette.error.main
+                                    : theme.palette.primary.main,
+                                fontWeight: 600,
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  flex: 1,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
                               >
-                                <ContentCopyIcon sx={{ fontSize: 18 }} />
-                              </IconButton>
+                                {f.name}
+                              </Box>
+                              {f.status === "pending" && (
+                                <InfoIcon
+                                  sx={{ fontSize: 18, color: theme.palette.grey[400], ml: 1 }}
+                                />
+                              )}
+                              {f.status === "processing" && (
+                                <CircularProgress
+                                  size={16}
+                                  color="primary"
+                                  thickness={6}
+                                  sx={{ ml: 1 }}
+                                />
+                              )}
+                              {f.status === "success" && (
+                                <CheckCircleIcon
+                                  sx={{ fontSize: 18, color: theme.palette.success.main, ml: 1 }}
+                                />
+                              )}
+                              {f.status === "failed" && (
+                                <CancelIcon
+                                  sx={{ fontSize: 18, color: theme.palette.error.main, ml: 1 }}
+                                />
+                              )}
                             </Box>
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ p: 3, backgroundColor: "#f8fafc", borderRadius: 2, border: "1px solid #e2e8f0" }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                              STATUS
-                            </Typography>
-                            <Chip label="Success" color="success" sx={{ mt: 1, color: "#fff" }} />
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Box sx={{ p: 3, backgroundColor: "#f8fafc", borderRadius: 2, border: "1px solid #e2e8f0" }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                              MESSAGE
-                            </Typography>
-                            <Typography sx={{ mt: 1 }} color="text.primary">
-                              {conversionResult.message}
-                            </Typography>
-                          </Box>
-                        </Grid>
-                      </Grid>
+                          ))}
+                        </Box>
+                      </Collapse>
+                    </Box>
+                  )}
+                </Box>
 
+                <Box
+                  sx={{
+                    p: 3,
+                    pt: 2,
+                    borderTop: xmlFiles.length > 0 ? `1px solid ${theme.palette.grey[200]}` : "none",
+                    flexShrink: 0,
+                    display: "flex",
+                    gap: 1,
+                  }}
+                >
+                  {xmlFiles.length > 0 && !loading && (
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={handleReset}
+                      sx={{
+                        flex: 1,
+                        py: 1.5,
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Clear Files
+                    </Button>
+                  )}
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    disabled={xmlFiles.length === 0 || loading}
+                    onClick={handleConvert}
+                    sx={{
+                      flex: 2,
+                      py: 1.5,
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                      bgcolor: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+                      "&:hover": {
+                        bgcolor: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 8px 20px rgba(23, 92, 211, 0.3)`,
+                      },
+                      "&:active": { transform: "translateY(0)" },
+                    }}
+                    startIcon={<DownloadIcon />}
+                  >
+                    {loading
+                      ? "Converting..."
+                      : `Convert to ${xmlFiles.length === 1 ? "PDF" : "ZIP"}`}
+                  </Button>
+                </Box>
+              </Paper>
+            </Zoom>
+          </Grid>
+
+          <Grid item xs={12} md={7}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 5,
+                textAlign: "center",
+                height: "100%",
+                minHeight: "500px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                border: `1px solid ${theme.palette.grey[200]}`,
+                borderRadius: theme.shape.borderRadius,
+                bgcolor: theme.palette.background.paper,
+                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  boxShadow: "0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.05)",
+                },
+              }}
+            >
+              {!loading && !allCompleted && (
+                <Fade in timeout={800}>
+                  <Box sx={{ textAlign: "center", maxWidth: "400px" }}>
+                    {xmlFiles.length > 0 ? (
+                      <PictureAsPdfIcon
+                        color="primary"
+                        sx={{ fontSize: 64, mb: 2 }}
+                      />
+                    ) : (
+                      <InfoIcon color="primary" sx={{ fontSize: 64, mb: 2 }} />
+                    )}
+
+                    <Typography variant="h4" fontWeight={700} sx={{ mb: 2 }}>
+                      {xmlFiles.length > 0 ? "Ready to Convert" : "Ready when you are"}
+                    </Typography>
+
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.6 }}
+                    >
+                      {xmlFiles.length > 0
+                        ? `${xmlFiles.length} file(s) selected. Click "Convert to ${
+                            xmlFiles.length === 1 ? "PDF" : "ZIP"
+                          }" to start.`
+                        : 'Select XML files on the left and click "Convert to PDF"'}
+                    </Typography>
+
+                    {xmlFiles.length > 0 && (
+                      <Box
+                        sx={{
+                          mt: 3,
+                          p: 2,
+                          background: theme.palette.grey[50],
+                          borderRadius: theme.shape.borderRadius,
+                          border: `1px solid ${theme.palette.grey[200]}`,
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {xmlFiles.length === 1
+                            ? "📄 Single file will be downloaded as PDF directly"
+                            : "📁 Multiple files will be downloaded as ZIP archive"}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Fade>
+              )}
+
+              {loading && (
+                <Fade in timeout={500}>
+                  <Box
+                    sx={{ textAlign: "center", maxWidth: "500px", width: "100%" }}
+                  >
+                    <CircularProgress
+                      size={80}
+                      thickness={2}
+                      sx={{ mb: 3, color: theme.palette.primary.main }}
+                    />
+                    <Typography
+                      variant="h4"
+                      fontWeight={700}
+                      sx={{ mb: 2, color: theme.palette.primary.main }}
+                    >
+                      Converting {xmlFiles.length} files...
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={progress}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        mb: 2,
+                        backgroundColor: theme.palette.grey[200],
+                        "& .MuiLinearProgress-bar": {
+                          backgroundColor: theme.palette.primary.main,
+                          borderRadius: 4,
+                        },
+                      }}
+                    />
+                    <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                      {progress}% completed
+                    </Typography>
+                    {currentFile && (
                       <Typography
                         variant="body1"
-                        sx={{ p: 3, borderRadius: 2, backgroundColor: "#f0f9ff" }}
-                        color="text.secondary"
+                        sx={{ color: theme.palette.text.primary, fontWeight: 600 }}
                       >
-                        The PDF file has been automatically downloaded to your device. Check your downloads folder if you can't find it immediately.
+                        Processing: {currentFile}
                       </Typography>
-                    </Paper>
-                  </Zoom>
-                )}
+                    )}
+                  </Box>
+                </Fade>
+              )}
 
-                {!loading && !conversionResult && !error && (
-                  <Fade in timeout={800}>
-                    <Paper elevation={0} className="content-paper" sx={{ p: 5, textAlign: "center" }}>
-                      <InfoIcon color="primary" sx={{ fontSize: 36, mb: 1 }} />
-                      <Typography variant="h6" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
-                        Ready when you are
-                      </Typography>
-                      <Typography color="text.secondary">
-                        Select an XML file on the left and click “Convert to PDF”.
-                      </Typography>
-                    </Paper>
-                  </Fade>
-                )}
-              </Box>
-            </Grid>
+              {allCompleted && !hasError && (
+                <Fade in timeout={500}>
+                  <Box sx={{ textAlign: "center", maxWidth: "400px" }}>
+                    <CheckCircleIcon
+                      sx={{ fontSize: 80, color: theme.palette.success.main, mb: 2 }}
+                    />
+                    <Typography
+                      variant="h4"
+                      fontWeight={800}
+                      sx={{ mb: 2, color: theme.palette.success.dark }}
+                    >
+                      Conversion Successful
+                    </Typography>
+                    <Typography variant="h6" color="text.secondary">
+                      {xmlFiles.length === 1
+                        ? "Your PDF file has been downloaded successfully"
+                        : "Your ZIP file has been generated and downloaded successfully"}
+                    </Typography>
+                    <Button variant="outlined" onClick={handleReset} sx={{ mt: 2 }}>
+                      Convert More Files
+                    </Button>
+                  </Box>
+                </Fade>
+              )}
+
+              {hasError && !loading && (
+                <Fade in timeout={500}>
+                  <Box sx={{ textAlign: "center", maxWidth: "400px" }}>
+                    <CancelIcon
+                      sx={{ fontSize: 80, color: theme.palette.error.main, mb: 2 }}
+                    />
+                    <Typography
+                      variant="h4"
+                      fontWeight={800}
+                      sx={{ mb: 2, color: theme.palette.error.main }}
+                    >
+                      Conversion Failed
+                    </Typography>
+                    <Typography variant="h6" color="text.secondary">
+                      Some files failed to convert. Please check and try again.
+                    </Typography>
+                    <Button variant="outlined" onClick={handleReset} sx={{ mt: 2 }}>
+                      Try Again
+                    </Button>
+                  </Box>
+                </Fade>
+              )}
+            </Paper>
           </Grid>
-        </Box>
-      </Container>
-
-      {/* Footer */}
-      <Box component="footer" className="footer">
-        <Container maxWidth="lg">
-          <Typography variant="body2" align="center" className="footer-text">
-            © {new Date().getFullYear()} XML to PDF Converter • Built by Can Matik
-          </Typography>
-        </Container>
+        </Grid>
       </Box>
-    </>
+    </Container>
   );
 }
