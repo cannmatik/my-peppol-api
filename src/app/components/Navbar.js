@@ -75,7 +75,7 @@ export default function Navbar() {
           width: 280,
           p: 3,
           height: "100%",
-          background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+          bgcolor: theme.palette.background.paper,
           borderLeft: `1px solid ${theme.palette.grey[200]}`,
         }}
         role="presentation"
@@ -94,10 +94,7 @@ export default function Navbar() {
             variant="h6"
             sx={{
               fontWeight: 700,
-              background: "linear-gradient(135deg, #07a5c3 0%, #175cd3 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              color: theme.palette.primary.main,
             }}
           >
             Peppol Tools
@@ -129,16 +126,15 @@ export default function Navbar() {
                     borderRadius: theme.shape.borderRadius,
                     textTransform: "none",
                     fontWeight: isActive(item.href) ? 600 : 500,
-                    color: isActive(item.href) ? theme.palette.primary.main : theme.palette.text.secondary,
-                    background: isActive(item.href)
-                      ? `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.primary.light} 100%)`
-                      : "transparent",
+                    color: isActive(item.href) ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                    bgcolor: isActive(item.href) ? theme.palette.primary.light : "transparent",
                     border: isActive(item.href)
-                      ? `1px solid ${theme.palette.primary.light}`
+                      ? `1px solid ${theme.palette.primary.main}`
                       : "1px solid transparent",
                     transition: "all 0.3s ease",
                     "&:hover": {
-                      background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.primary.light} 100%)`,
+                      bgcolor: theme.palette.primary.light,
+                      color: theme.palette.primary.contrastText,
                       borderColor: theme.palette.primary.main,
                       transform: "scale(1.02)",
                       boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
@@ -160,7 +156,7 @@ export default function Navbar() {
           sx={{
             mt: "auto",
             p: 2,
-            backgroundColor: theme.palette.background.paper,
+            bgcolor: theme.palette.background.paper,
             borderRadius: theme.shape.borderRadius,
             border: `1px solid ${theme.palette.grey[200]}`,
           }}
@@ -180,7 +176,7 @@ export default function Navbar() {
         elevation={0}
         sx={{
           mb: 1,
-          background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+          bgcolor: theme.palette.background.paper,
           boxShadow: `0 2px 6px rgba(0,0,0,0.08)`,
         }}
       >
@@ -199,7 +195,7 @@ export default function Navbar() {
             transition={{ duration: 0.5 }}
           >
             <Typography
-              variant="h6"
+              variant="h5"
               component="a"
               href="/"
               onClick={(e) => {
@@ -208,16 +204,15 @@ export default function Navbar() {
               }}
               sx={{
                 flexGrow: { xs: 1, md: 0 },
-                fontWeight: 700,
-                fontSize: { xs: "1.2rem", md: "1.4rem" },
-                background: "linear-gradient(135deg, #07a5c3 0%, #175cd3 100%)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                fontWeight: 800,
+                fontSize: { xs: "1.4rem", md: "1.6rem" },
+                letterSpacing: "-0.5px",
+                color: theme.palette.primary.main,
                 textDecoration: "none",
+                textTransform: "uppercase",
                 "&:hover": {
-                  opacity: 0.85,
-                  transform: "scale(1.02)",
+                  opacity: 0.9,
+                  transform: "scale(1.03)",
                   transition: "all 0.3s ease",
                 },
               }}
@@ -245,12 +240,10 @@ export default function Navbar() {
                     startIcon={item.icon}
                     sx={{
                       fontWeight: isActive(item.href) ? 600 : 500,
-                      color: isActive(item.href) ? theme.palette.primary.main : theme.palette.text.secondary,
-                      background: isActive(item.href)
-                        ? `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.primary.light} 100%)`
-                        : "transparent",
+                      color: isActive(item.href) ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                      bgcolor: isActive(item.href) ? theme.palette.primary.light : "transparent",
                       border: isActive(item.href)
-                        ? `1px solid ${theme.palette.primary.light}`
+                        ? `1px solid ${theme.palette.primary.main}`
                         : "1px solid transparent",
                       borderRadius: theme.shape.borderRadius,
                       padding: "8px 18px",
@@ -258,8 +251,8 @@ export default function Navbar() {
                       fontSize: "0.95rem",
                       transition: "all 0.3s ease",
                       "&:hover": {
-                        background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.primary.light} 100%)`,
-                        color: theme.palette.primary.dark,
+                        bgcolor: theme.palette.primary.light,
+                        color: theme.palette.primary.contrastText,
                         borderColor: theme.palette.primary.main,
                         transform: "scale(1.03)",
                         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",

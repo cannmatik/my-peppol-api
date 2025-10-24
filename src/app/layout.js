@@ -5,6 +5,9 @@ import MuiThemeProvider from "./components/MuiThemeProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { Box, Container, Typography } from "@mui/material";
 import Link from "next/link";
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/700.css";
+import "@fontsource/montserrat/800.css";
 
 // Fontları tanımlama
 const geistSans = Geist({

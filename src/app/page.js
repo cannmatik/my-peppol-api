@@ -18,7 +18,11 @@ import {
   Fade,
   Zoom,
   Divider,
-  useMediaQuery
+  useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -40,6 +44,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -69,6 +74,7 @@ export default function Home() {
       
       const data = await response.json();
       setResult(data);
+      setOpenDialog(true); // Open dialog when result is received
 
     } catch (err) {
       setError(err.message);
@@ -95,6 +101,11 @@ export default function Home() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setResult(null); // Clear result when closing dialog
   };
 
   const getResultHeader = () => {
@@ -183,7 +194,7 @@ export default function Home() {
       </Box>
 
       <Box sx={{ display: "flex", justifyContent: "center" }}>
-        <Grid container spacing={4} sx={{ maxWidth: "1000px" }}>
+        <Grid container spacing={4} sx={{ maxWidth: "1000px", alignItems: "flex-start" }}>
           <Grid item xs={12} md={5} lg={4}>
             <Zoom in timeout={600}>
               <Paper
@@ -379,7 +390,7 @@ export default function Home() {
           </Grid>
 
           <Grid item xs={12} md={7} lg={8}>
-            <Box sx={{ height: "100%", minHeight: "400px", display: "flex", flexDirection: "column" }}>
+            <Box sx={{ alignSelf: "flex-start", width: "100%" }}>
               {loading && (
                 <Fade in timeout={500}>
                   <Paper
@@ -387,7 +398,6 @@ export default function Home() {
                     sx={{
                       p: { xs: 4, sm: 6 },
                       textAlign: "center",
-                      height: "100%",
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "center",
@@ -427,238 +437,6 @@ export default function Home() {
                     <Typography variant="body2">{error}</Typography>
                   </Alert>
                 </Fade>
-              )}
-
-              {result && (
-                <Zoom in timeout={500}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      border: `1px solid ${theme.palette.grey[200]}`,
-                      borderRadius: theme.shape.borderRadius,
-                      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
-                      bgcolor: theme.palette.background.paper,
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        boxShadow: "0 20px 40px -10px rgba(0,0,0,0.1), 0 8px 16px -4px rgba(0,0,0,0.05)",
-                        transform: "translateY(-2px)",
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
-                      {resultHeader && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            mb: 4,
-                            flexDirection: { xs: "column", sm: "row" },
-                            justifyContent: { xs: "center", sm: "flex-start" },
-                            textAlign: { xs: "center", sm: "left" },
-                            gap: 2,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              p: 2,
-                              borderRadius: theme.shape.borderRadius,
-                              bgcolor: resultHeader.bgColor,
-                              color: resultHeader.color,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
-                          >
-                            {resultHeader.icon}
-                          </Box>
-                          <Box sx={{ display: "flex", flexDirection: "column", alignItems: { xs: "center", sm: "flex-start" } }}>
-                            <Typography variant="h4" component="h2" sx={{ mb: 0.5 }}>
-                              {resultHeader.title}
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary">
-                              {result.matchType}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      )}
-
-                      <Grid container spacing={3} sx={{ mb: 4, textAlign: { xs: "center", md: "left" } }}>
-                        <Grid item xs={12} sm={6} md={4}>
-                          <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              COMPANY NAME
-                            </Typography>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, justifyContent: { xs: "center", md: "flex-start" } }}>
-                              <Typography variant="h6" fontWeight={700} color="primary.main">
-                                {result.companyName || "Not available"}
-                              </Typography>
-                              {result.companyName && (
-                                <IconButton size="small" onClick={() => copyToClipboard(result.companyName)} sx={{ color: theme.palette.grey[600], "&:hover": { color: theme.palette.primary.main, bgcolor: theme.palette.primary.light } }}>
-                                  <ContentCopyIcon sx={{ fontSize: 16 }} />
-                                </IconButton>
-                              )}
-                            </Box>
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={4}>
-                          <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              PARTICIPANT ID
-                            </Typography>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, justifyContent: { xs: "center", md: "flex-start" } }}>
-                              <Typography variant="body1" fontWeight={600}>
-                                {result.participantID}
-                              </Typography>
-                              <IconButton size="small" onClick={() => copyToClipboard(result.participantID)} sx={{ color: theme.palette.grey[600], "&:hover": { color: theme.palette.primary.main, bgcolor: theme.palette.primary.light } }}>
-                                <ContentCopyIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={4}>
-                          <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              SCHEME ID
-                            </Typography>
-                            <Typography variant="body1" fontWeight={600}>
-                              {result.schemeID}
-                            </Typography>
-                          </Box>
-                        </Grid>
-                        {result.documentType && (
-                          <Grid item xs={12}>
-                            <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                REQUESTED DOCUMENT TYPE
-                              </Typography>
-                              <Typography variant="body1" fontWeight={600}>
-                                {result.documentType}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        )}
-                      </Grid>
-
-                      {result.allDocumentTypes && result.allDocumentTypes.length > 0 && (
-                        <Box sx={{ mb: 4, textAlign: { xs: "center", md: "left" } }}>
-                          <Typography variant="subtitle1" color="text.primary" sx={{ mb: 2, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                            SUPPORTED DOCUMENT TYPES
-                          </Typography>
-                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: { xs: "center", md: "flex-start" }, mt: 2 }}>
-                            {result.allDocumentTypes.map((docType, index) => (
-                              <Chip
-                                key={index}
-                                label={docType}
-                                size="medium"
-                                color="primary"
-                                variant="outlined"
-                                sx={{
-                                  fontWeight: 500,
-                                  borderColor: theme.palette.grey[200],
-                                  bgcolor: theme.palette.grey[50],
-                                  "&:hover": {
-                                    borderColor: theme.palette.primary.main,
-                                    bgcolor: theme.palette.primary.light,
-                                    transform: "translateY(-1px)",
-                                  },
-                                }}
-                              />
-                            ))}
-                          </Box>
-                        </Box>
-                      )}
-
-                      <Alert
-                        severity={
-                          result.supportsDocumentType === true ? "success" :
-                          result.supportsDocumentType === false ? "error" :
-                          result.matchType === "alternative_schemes" ? "warning" : "info"
-                        }
-                        icon={false}
-                        sx={{
-                          mt: 3,
-                          p: 2,
-                          borderRadius: theme.shape.borderRadius,
-                          bgcolor:
-                            result.supportsDocumentType === true ? "#f0fdf4" :
-                            result.supportsDocumentType === false ? "#fef2f2" :
-                            result.matchType === "alternative_schemes" ? "#fffbeb" : "#f0f9ff",
-                          textAlign: { xs: "center", md: "left" },
-                        }}
-                      >
-                        <Typography variant="body1" fontWeight={500}>
-                          {result.message}
-                        </Typography>
-                      </Alert>
-
-                      {result.alternativeSchemes && result.alternativeSchemes.length > 0 && (
-                        <Box sx={{ mt: 4, textAlign: { xs: "center", md: "left" } }}>
-                          <Divider sx={{ my: 3, borderColor: theme.palette.grey[200] }} />
-                          <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600 }}>
-                            ALTERNATIVE SCHEMES FOUND
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Participant found with different schemes:
-                          </Typography>
-                          <Grid container spacing={2}>
-                            {result.alternativeSchemes.map((scheme, index) => (
-                              <Grid item xs={12} md={6} key={index}>
-                                <Card
-                                  variant="outlined"
-                                  sx={{
-                                    p: 2,
-                                    bgcolor: theme.palette.grey[50],
-                                    borderRadius: theme.shape.borderRadius,
-                                    border: `1px solid ${theme.palette.grey[200]}`,
-                                    transition: "all 0.2s ease",
-                                    "&:hover": {
-                                      bgcolor: theme.palette.primary.light,
-                                      borderColor: theme.palette.primary.main,
-                                      transform: "translateY(-2px)",
-                                    },
-                                  }}
-                                >
-                                  <CardContent sx={{ textAlign: { xs: "center", md: "left" } }}>
-                                    <Typography variant="body1" fontWeight={700} color="primary.main" sx={{ mb: 0.5 }}>
-                                      {scheme.scheme}:{scheme.participantId}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      {scheme.companyName}
-                                    </Typography>
-                                    {scheme.documentTypes && scheme.documentTypes.length > 0 && (
-                                      <Box sx={{ mt: 1.5 }}>
-                                        <Typography variant="caption" fontWeight={600} sx={{ mb: 1 }}>
-                                          Supports:
-                                        </Typography>
-                                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                                          {scheme.documentTypes.map((doc, idx) => (
-                                            <Chip
-                                              key={idx}
-                                              label={doc}
-                                              size="small"
-                                              variant="outlined"
-                                              sx={{
-                                                fontSize: "0.65rem",
-                                                height: "22px",
-                                                borderColor: theme.palette.grey[200],
-                                                bgcolor: theme.palette.background.paper,
-                                              }}
-                                            />
-                                          ))}
-                                        </Box>
-                                      </Box>
-                                    )}
-                                  </CardContent>
-                                </Card>
-                              </Grid>
-                            ))}
-                          </Grid>
-                        </Box>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Zoom>
               )}
 
               {!loading && !result && !error && (
@@ -757,6 +535,250 @@ export default function Home() {
           </Grid>
         </Grid>
       </Box>
+
+      {result && (
+  <Dialog
+    open={openDialog}
+    onClose={handleCloseDialog}
+    maxWidth="sm"
+    fullWidth
+    PaperProps={{
+      sx: {
+        borderRadius: theme.shape.borderRadius,
+        bgcolor: theme.palette.background.paper,
+        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+      },
+    }}
+  >
+    <DialogTitle sx={{ p: 3, pb: 2 }}>
+      {resultHeader && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            flexDirection: { xs: "column", sm: "row" },
+            justifyContent: { xs: "center", sm: "flex-start" },
+            textAlign: { xs: "center", sm: "left" },
+            gap: 2,
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: theme.shape.borderRadius,
+              bgcolor: resultHeader.bgColor,
+              color: resultHeader.color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            {resultHeader.icon}
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: { xs: "center", sm: "flex-start" } }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 0.5 }}>
+              {resultHeader.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {result.matchType}
+            </Typography>
+          </Box>
+        </Box>
+      )}
+    </DialogTitle>
+    <DialogContent sx={{ p: 3, pt: 1 }}>
+      <Grid container spacing={2} sx={{ mb: 3, textAlign: { xs: "center", sm: "left" } }}>
+        <Grid item xs={12} sm={6}>
+          <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              COMPANY NAME
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, justifyContent: { xs: "center", sm: "flex-start" } }}>
+              <Typography variant="h6" fontWeight={700} color="primary.main">
+                {result.companyName || "Not available"}
+              </Typography>
+              {result.companyName && (
+                <IconButton size="small" onClick={() => copyToClipboard(result.companyName)} sx={{ color: theme.palette.grey[600], "&:hover": { color: theme.palette.primary.main, bgcolor: theme.palette.primary.light } }}>
+                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              )}
+            </Box>
+          </Box>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              PARTICIPANT ID
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, justifyContent: { xs: "center", sm: "flex-start" } }}>
+              <Typography variant="body1" fontWeight={600}>
+                {result.participantID}
+              </Typography>
+              <IconButton size="small" onClick={() => copyToClipboard(result.participantID)} sx={{ color: theme.palette.grey[600], "&:hover": { color: theme.palette.primary.main, bgcolor: theme.palette.primary.light } }}>
+                <ContentCopyIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Box>
+          </Box>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              SCHEME ID
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              {result.schemeID}
+            </Typography>
+          </Box>
+        </Grid>
+        {result.documentType && (
+          <Grid item xs={12}>
+            <Box sx={{ p: 2, bgcolor: theme.palette.grey[50], borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.grey[200]}` }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                REQUESTED DOCUMENT TYPE
+              </Typography>
+              <Typography variant="body1" fontWeight={600}>
+                {result.documentType}
+              </Typography>
+            </Box>
+          </Grid>
+        )}
+      </Grid>
+
+      {result.allDocumentTypes && result.allDocumentTypes.length > 0 && (
+        <Box sx={{ mb: 3, textAlign: { xs: "center", sm: "left" } }}>
+          <Typography variant="subtitle2" color="text.primary" sx={{ mb: 2, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            SUPPORTED DOCUMENT TYPES
+          </Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: { xs: "center", sm: "flex-start" } }}>
+            {result.allDocumentTypes.map((docType, index) => (
+              <Chip
+                key={index}
+                label={docType}
+                size="medium"
+                color="primary"
+                variant="outlined"
+                sx={{
+                  fontWeight: 500,
+                  borderColor: theme.palette.grey[200],
+                  bgcolor: theme.palette.grey[50],
+                }}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      <Alert
+        severity={
+          result.supportsDocumentType === true ? "success" :
+          result.supportsDocumentType === false ? "error" :
+          result.matchType === "alternative_schemes" ? "warning" : "info"
+        }
+        icon={false}
+        sx={{
+          p: 2,
+          borderRadius: theme.shape.borderRadius,
+          bgcolor:
+            result.supportsDocumentType === true ? "#f0fdf4" :
+            result.supportsDocumentType === false ? "#fef2f2" :
+            result.matchType === "alternative_schemes" ? "#fffbeb" : "#f0f9ff",
+          textAlign: { xs: "center", sm: "left" },
+        }}
+      >
+        <Typography variant="body1" fontWeight={500}>
+          {result.message}
+        </Typography>
+      </Alert>
+
+      {result.alternativeSchemes && result.alternativeSchemes.length > 0 && (
+        <Box sx={{ mt: 3, textAlign: { xs: "center", sm: "left" } }}>
+          <Divider sx={{ my: 2, borderColor: theme.palette.grey[200] }} />
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+            ALTERNATIVE SCHEMES FOUND
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Participant found with different schemes:
+          </Typography>
+          <Grid container spacing={2}>
+            {result.alternativeSchemes.map((scheme, index) => (
+              <Grid item xs={12} key={index}>
+                <Card
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    bgcolor: theme.palette.grey[50],
+                    borderRadius: theme.shape.borderRadius,
+                    border: `1px solid ${theme.palette.grey[200]}`,
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      bgcolor: theme.palette.primary.light,
+                      borderColor: theme.palette.primary.main,
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: { xs: "center", sm: "left" } }}>
+                    <Typography variant="body1" fontWeight={700} color="primary.main" sx={{ mb: 0.5 }}>
+                      {scheme.scheme}:{scheme.participantId}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {scheme.companyName}
+                    </Typography>
+                    {scheme.documentTypes && scheme.documentTypes.length > 0 && (
+                      <Box sx={{ mt: 1.5 }}>
+                        <Typography variant="caption" fontWeight={600} sx={{ mb: 1 }}>
+                          Supports:
+                        </Typography>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                          {scheme.documentTypes.map((doc, idx) => (
+                            <Chip
+                              key={idx}
+                              label={doc}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                fontSize: "0.65rem",
+                                height: "22px",
+                                borderColor: theme.palette.grey[200],
+                                bgcolor: theme.palette.background.paper,
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
+    </DialogContent>
+    <DialogActions sx={{ p: 3, pt: 1 }}>
+      <Button
+        onClick={handleCloseDialog}
+        variant="contained"
+        sx={{
+          py: 1.5,
+          fontSize: "0.9rem",
+          fontWeight: 600,
+          textTransform: "none",
+          bgcolor: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+          "&:hover": {
+            bgcolor: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+            transform: "translateY(-2px)",
+            boxShadow: `0 8px 20px rgba(23, 92, 211, 0.3)`,
+          },
+          "&:active": { transform: "translateY(0)" },
+        }}
+      >
+        Close
+      </Button>
+    </DialogActions>
+  </Dialog>
+      )}
     </Container>
   );
 }

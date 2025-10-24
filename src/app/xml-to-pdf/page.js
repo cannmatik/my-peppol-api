@@ -302,35 +302,47 @@ export default function XmlToPdfPage() {
                     >
                       Drag & drop your XML files here or click below
                     </Typography>
-
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<UploadIcon />}
-                      sx={{
-                        borderRadius: theme.shape.borderRadius,
-                        px: 3,
-                        py: 1.2,
-                        fontWeight: 600,
-                        border: `2px dashed ${theme.palette.grey[200]}`,
-                        textTransform: "none",
-                        width: "100%",
-                        "&:hover": {
-                          border: `2px dashed ${theme.palette.primary.main}`,
-                          bgcolor: theme.palette.primary.light,
-                        },
-                      }}
-                    >
-                      Choose XML Files
-                      <input
-                        type="file"
-                        accept=".xml"
-                        hidden
-                        multiple
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                      />
-                    </Button>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        startIcon={
+                          <UploadIcon
+                            sx={{
+                              fontSize: 26,
+                              transition: "transform 0.3s ease",
+                            }}
+                          />
+                        }
+                        sx={{
+                          borderRadius: "12px",
+                          px: 3,
+                          py: 1.2,
+                          fontWeight: 600,
+                          border: `2px dashed ${theme.palette.grey[200]}`,
+                          textTransform: "none",
+                          width: "100%",
+                          transition: "all 0.3s ease",
+                          "&:hover": {
+                            border: `2px dashed ${theme.palette.primary.main}`,
+                            boxShadow: "0 6px 16px rgba(23, 92, 211, 0.2)",
+                            bgcolor: "transparent", // arka plan rengini korur
+                            transform: "translateY(-2px)",
+                          },
+                          "&:hover .MuiSvgIcon-root": {
+                            transform: "scale(1.15)",
+                          },
+                        }}
+                      >
+                        Choose XML Files
+                        <input
+                          type="file"
+                          accept=".xml"
+                          hidden
+                          multiple
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                        />
+                      </Button>
                   </Box>
 
                   {xmlFiles.length > 0 && (

@@ -1,5 +1,8 @@
 // src/app/theme.js
 import { createTheme } from "@mui/material";
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/700.css";
+import "@fontsource/montserrat/800.css";
 
 export const theme = createTheme({
   palette: {
@@ -34,54 +37,58 @@ export const theme = createTheme({
       900: "#0f172a",
     },
   },
-  typography: {
-    fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: {
-      fontWeight: 700,
-      fontSize: "3rem",
-      lineHeight: 1.2,
-      letterSpacing: "-0.02em",
-      background: "linear-gradient(135deg, #07a5c3 0%, #175cd3 100%)",
-      backgroundClip: "text",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-    },
-    h4: {
-      fontWeight: 700,
-      fontSize: "2.25rem",
-      lineHeight: 1.2,
-      letterSpacing: "-0.02em",
-      background: "linear-gradient(135deg, #07a5c3 0%, #175cd3 100%)",
-      backgroundClip: "text",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-    },
-    h5: {
-      fontWeight: 600,
-      fontSize: "1.5rem",
-      lineHeight: 1.3,
-    },
-    h6: {
-      fontWeight: 600,
-      fontSize: "1.125rem",
-      lineHeight: 1.4,
-    },
-    body1: {
-      fontSize: "0.875rem",
-      lineHeight: 1.5,
-    },
-    body2: {
-      fontSize: "0.75rem",
-      lineHeight: 1.5,
-    },
-    button: {
-      fontWeight: 600,
-      textTransform: "none",
-      fontSize: "0.875rem",
-    },
+typography: {
+  fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  h1: {
+    fontFamily: '"Montserrat", "Poppins", sans-serif',
+    fontWeight: 800,
+    fontSize: "3rem",
+    lineHeight: 1.2,
+    letterSpacing: "-0.02em",
+    background: "linear-gradient(135deg, #07a5c3 0%, #175cd3 100%)",
+    backgroundClip: "text",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
   },
+  h4: {
+    fontFamily: '"Montserrat", "Poppins", sans-serif',
+    fontWeight: 800,
+    fontSize: "2.25rem",
+    lineHeight: 1.2,
+    letterSpacing: "-0.02em",
+    background: "linear-gradient(135deg, #07a5c3 0%, #175cd3 100%)",
+    backgroundClip: "text",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+  },
+  h5: {
+    fontFamily: '"Montserrat", "Poppins", sans-serif',
+    fontWeight: 700,
+    fontSize: "1.5rem",
+    lineHeight: 1.3,
+  },
+  h6: {
+    fontFamily: '"Montserrat", "Poppins", sans-serif',
+    fontWeight: 700,
+    fontSize: "1.125rem",
+    lineHeight: 1.4,
+  },
+  body1: {
+    fontSize: "0.875rem",
+    lineHeight: 1.5,
+  },
+  body2: {
+    fontSize: "0.75rem",
+    lineHeight: 1.5,
+  },
+  button: {
+    fontWeight: 600,
+    textTransform: "none",
+    fontSize: "0.875rem",
+  },
+},
   shape: {
-    borderRadius: 5,
+    borderRadius: 4,
   },
   components: {
     MuiCssBaseline: {
